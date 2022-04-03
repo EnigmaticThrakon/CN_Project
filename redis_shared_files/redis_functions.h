@@ -20,7 +20,7 @@ public:
         context = NULL;
         reply = NULL;
 
-        context = redisConnectUnixWithTimeout(hostname, timeout);
+        context = redisConnectWithTimeout(hostname, port, timeout);
     }
 
     ~redis_handler()
