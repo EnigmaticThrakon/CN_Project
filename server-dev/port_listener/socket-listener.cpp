@@ -18,14 +18,13 @@
 
 #define TRUE   1 
 #define FALSE  0 
-#define PORT 8887
+#define PORT 8888
      
 int main(int argc , char *argv[])  
 {  
-    std::string new_connection = "New User Connected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d";
+    std::string new_connection = "New User Connected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d\n";
 
     redis_handler *redisHandler = new redis_handler();
-
 
     int opt = TRUE;  
     int master_socket , addrlen , new_socket , client_socket[30] , 
@@ -141,10 +140,10 @@ int main(int argc , char *argv[])
 
             //send new connection greeting message 
             reply = "Connected to marvin.webredirect.org";
-            if( send(new_socket, reply.c_str(), strlen(reply.c_str()), 0) != strlen(reply.c_str()) )  
-            {  
-                perror("send");  
-            }  
+            // if( send(new_socket, reply.c_str(), strlen(reply.c_str()), 0) != strlen(reply.c_str()) )  
+            // {  
+            //     perror("send");  
+            // }  
                  
             //puts("Welcome message sent successfully");  
                  
@@ -157,7 +156,7 @@ int main(int argc , char *argv[])
                     client_socket[i] = new_socket;  
                     printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
 
-                    redisHandler->set_key(std::to_string(i) + _player_connected, std::to_string(1));
+                    redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
                     //printf("Adding to list of sockets as %d\n" , i);  
                          
                     break;  
