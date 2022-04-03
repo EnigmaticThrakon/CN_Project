@@ -2,3 +2,4 @@
 **/build
 
 **/**/redis_shared_files
+socket-listener
