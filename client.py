@@ -9,13 +9,14 @@ class Client():
         self.address = (self.server, self.port)
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect(self.address)
+        # self.is_right = bool(self.client.recv(2048).decode(self.format))
+        self.is_right = True
         self.connected = True
 
 
     def send_msg(self, msg):
         try:
             self.client.send(msg.encode(self.format))
-            print(self.client.recv(2048).decode(self.format))
         except socket.error as e:
             print(e)
 
