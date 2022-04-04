@@ -1,32 +1,23 @@
-# import socket
-#
-# HEADER = 64
-# PORT = 8888
-# FORMAT = 'utf-8'
-# DISCONNECT_MESSAGE = "!DISCONNECT"
-# SERVER = "marvin.webredirect.org"
-# ADDR = (SERVER, PORT)
-#
-# client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# client.connect(ADDR)
-#
-# def send(msg):
-#     message = msg.encode(FORMAT)
-#     msg_length = len(message)
-#     send_length = str(msg_length).encode(FORMAT)
-#     send_length += b' ' * (HEADER - len(send_length))
-#     client.send(send_length)
-#     client.send(message)
-#     print(client.recv(2048).decode(FORMAT))
-#
-# send("Hello World!")
-# input()
-# send(DISCONNECT_MESSAGE)
-
 from client import Client
-from player import Player
+from game import Game
+import threading
 
 client = Client()
-player = Player(client)
-player.player_move()
-client.disconnect()
+game = Game(client)
+
+# t1 = threading.Thread(target=game.set_game_info())
+# t2 = threading.Thread(target=game.player_move())
+#
+# t1.start()
+# t2.start()
+
+# game.set_game_info()
+try:
+    t1 = threading.Thread(target=game.game_loop)
+    t1.start()
+except:
+    client.disconnect()
+
+
+
+# TODO: read server data, thread player and reader
