@@ -1,26 +1,29 @@
 import socket
 
 class Client():
-    def __init__(self, header=64, port=8888, format='utf-8', disconnect_mess='!DISCONNECT',
-                 server='marvin.webredirect.org'):
-        self.header = header
-        self.port = port
-        self.format = format
-        self.disconnect_message = disconnect_mess
-        self.server = server
-        self.address = (server, port)
-
+    def __init__(self):
+        self.header = 64
+        self.port = 8888
+        self.format = 'utf-8'
+        self.server = 'marvin.webredirect.org'
+        self.address = (self.server, self.port)
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect(self.address)
+        self.connected = True
+
 
     def send_msg(self, msg):
-        message = msg.encode(self.format)
-        msg_length = len(message)
-        send_length = str(msg_length).encode(self.format)
-        send_length += b' ' * (self.header - len(send_length))
-        self.client.send(send_length)
-        self.client.send(message)
-        print(self.client.recv(2048).decode(self.format))
+        try:
+            self.client.send(msg.encode(self.format))
+            print(self.client.recv(2048).decode(self.format))
+        except socket.error as e:
+            print(e)
+
+    def recv_msg(self):
+        try:
+            return self.client.recv(2048).decode(self.format)
+        except socket.error as e:
+            print(e)
 
     def disconnect(self):
-        self.send_msg(self.disconnect_message)
+        self.send_msg("~~~")
