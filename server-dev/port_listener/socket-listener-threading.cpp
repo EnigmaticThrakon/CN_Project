@@ -21,57 +21,135 @@
 #define FALSE 0
 #define PORT 8888
 
-int client_socket[30] = { 0 };
+int client_socket[30] = {0};
 std::string reply = "<0:0,0:0,0>";
-std::mutex reply_mtx, client_socket_mtx;
+std::mutex redis_mtx;
+redis_handler *redisHandler;
 
-void *status_update(void *arg)
+struct sockaddr_in address;
+fd_set readfds;
+
+void *status_update(int socket_id)
 {
     while (true)
     {
-        client_socket_mtx.lock();
-        reply_mtx.lock();
-        for (int i = 0; i < 30; i++)
-        {
-            if(client_socket[i] != 0)
-            {
-                send(client_socket[i], reply.c_str(), strlen(reply.c_str()), 0);
-            }
-        }
-        reply_mtx.unlock();
-        client_socket_mtx.unlock();
+        redis_mtx.lock();
+        redisHandler->get_key(std::to_string(i) + ':' + _player_connected);
+        //redisHandler->get_key(std::to_string(i) + ':' + _player_connected);
+        redis_mtx.unlock();
+
+        //if(player is connected)
+        //  send the data from redis
+        send(socket_id, reply.c_str(), strlen(reply.c_str()), 0);
     }
-    return arg;
+    return NULL;
 }
 
-
-int main(int argc, char *argv[])
+void *client_listener(int max_sd, fd_set readfds, int socket_id)
 {
-    std::string new_connection = "New User Connected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d\n";
+    redis_mtx.lock();
+    redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
+    redis_mtx.unlock();
 
-    redis_handler *redisHandler = new redis_handler();
+    bool connected = true;
+    char buffer[1024];
 
-    int opt = TRUE;
-    int master_socket, addrlen, new_socket, client_socket[30],
-        max_clients = 30, activity, i, valread, sd;
-    int max_sd;
-    struct sockaddr_in address;
-
-    char buffer[1025]; // data buffer of 1K
-
-    // set of socket descriptors
-    fd_set readfds;
-
-    // a message
-    // const char *message = "ECHO Daemon v1.0 \r\n";
-
-    // initialise all client_socket[] to 0 so not checked
-    for (int i = 0; i < max_clients; i++)
+    while (connected)
     {
-        client_socket[i] = 0;
+        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+
+        if ((activity < 0) && (errno != EINTR))
+        {
+            printf("select error");
+        }
+
+        if (FD_ISSET(socket_id, &readfds))
+        {
+            int temp = read(socket_id, buffer, 1025);
+            buffer[temp] = '\0';
+
+            if (std::string(buffer).substr(0, 3) = "~~~")
+            {
+                connected = false;
+            }
+            else
+            {
+                y_pos = atoi(buffer);
+                reply = '<' + std::to_string(y_pos) + ':' + std::to_string(ball_x) + ',' + std::to_string(ball_y) + ':' + std::to_string(score_a) + ',' + std::to_string(score_b) + '>';
+                // std::string(y_pos + ':' + ball_x + ',' + ball_y + ':' + score_a + ',' + score_b);
+                send(sd, reply.c_str(), strlen(reply.c_str()), 0);
+                // send(sd , buffer , strlen(buffer) , 0 );
+                std::cout << std::string(buffer) << std::endl;
+                redis_mtx.lock();
+                redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
+                redis_mtx.unlock();
+            }
+        }
     }
 
-    // create a master socket
+    return NULL;
+}
+
+void wait_for_connections(pthread *client_threads, int master_socket, sockaddr_in address, int max_sd, fd_set readfds)
+{
+    std::string new_connection = "New User Connected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d\n";
+    int client_count = 0;
+    while (true)
+    {
+        FD_ZERO(&readfds);
+
+        FD_SET(master_socket, &readfds);
+        max_sd = master_socket;
+
+        activity = select(max_sd + 1, &readfds, NULL, NULL, timeout);
+
+        if ((activity < 0) && (errno != EINTR))
+        {
+            printf("select error");
+        }
+
+        if (FD_ISSET(master_socket, &readfds))
+        {
+            if ((new_socket = accept(master_socket,
+                                     (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
+            {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        for (int i = 0; i < max_clients; i++)
+        {
+            // if position is empty
+            if (client_socket[i] == 0)
+            {
+                client_count++;
+                client_socket[i] = new_socket;
+                FD_SET(new_socket, &readfds);
+
+                // pthread_create(*(client_threads + client_count)
+
+                if (new_socket > max_sd)
+                    max_sd = new_socket;
+
+                printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
+
+                // pthread_create(*(client_threads + client_count)
+                //  printf("Adding to list of sockets as %d\n" , i);
+
+                break;
+            }
+        }
+
+        if (client_count == max_clients)
+            break;
+    }
+
+    return;
+}
+
+void initialization(int master_socket)
+{
     if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
     {
         perror("socket failed");
@@ -80,6 +158,7 @@ int main(int argc, char *argv[])
 
     // set master socket to allow multiple connections ,
     // this is just a good habit, it will work without this
+    int opt = 1;
     if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt,
                    sizeof(opt)) < 0)
     {
@@ -107,6 +186,32 @@ int main(int argc, char *argv[])
         exit(EXIT_FAILURE);
     }
 
+}
+
+int main(int argc, char *argv[])
+{
+    redisHandler = new redis_handler();
+
+    int opt = TRUE;
+    int master_socket, addrlen, new_socket,
+        max_clients = 2, activity, i, valread, sd,
+        client_socket[max_clients];
+    int max_sd;
+
+    char buffer[1025]; // data buffer of 1K
+
+    // set of socket descriptors
+
+    // a message
+    // const char *message = "ECHO Daemon v1.0 \r\n";
+
+    // initialise all client_socket[] to 0 so not checked
+    for (int i = 0; i < max_clients; i++)
+    {
+        client_socket[i] = 0;
+    }
+
+    // create a master socket
     // accept the incoming connection
     addrlen = sizeof(address);
     puts("Waiting for connections ...");
@@ -114,8 +219,62 @@ int main(int argc, char *argv[])
     int y_pos = 0;
     const int ball_x = 0, ball_y = 0, score_a = 0, score_b = 0;
 
-    pthread_t update_thread;
-    pthread_create(&update_thread, NULL, status_update, NULL);
+    //pthread_create(&update_thread, NULL, status_update, NULL);
+
+    pthread_t client_threads[max_clients];
+    int client_count = 0;
+    while (true)
+    {
+        FD_ZERO(&readfds);
+
+        FD_SET(master_socket, &readfds);
+        max_sd = master_socket;
+
+        activity = select(max_sd + 1, &readfds, NULL, NULL, timeout);
+
+        if ((activity < 0) && (errno != EINTR))
+        {
+            printf("select error");
+        }
+
+        if (FD_ISSET(master_socket, &readfds))
+        {
+            if ((new_socket = accept(master_socket,
+                                     (struct sockaddr *)&address, (socklen_t *)&addrlen)) < 0)
+            {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+        }
+
+        for (int i = 0; i < max_clients; i++)
+        {
+            // if position is empty
+            if (client_socket[i] == 0)
+            {
+                client_count++;
+                client_socket[i] = new_socket;
+                FD_SET(new_socket, &readfds);
+
+                if (new_socket > max_sd)
+                    max_sd = new_socket;
+
+                printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
+
+                redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
+                // printf("Adding to list of sockets as %d\n" , i);
+
+                break;
+            }
+        }
+
+        if (client_count == max_clients)
+            break;
+    }
+
+    while (true)
+    {
+    }
 
     while (TRUE)
     {
@@ -186,20 +345,7 @@ int main(int argc, char *argv[])
 
             // add new socket to array of sockets
             client_socket_mtx.lock();
-            for (int i = 0; i < max_clients; i++)
-            {
-                // if position is empty
-                if (client_socket[i] == 0)
-                {
-                    client_socket[i] = new_socket;
-                    printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
 
-                    redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
-                    // printf("Adding to list of sockets as %d\n" , i);
-
-                    break;
-                }
-            }
             client_socket_mtx.unlock();
         }
 
