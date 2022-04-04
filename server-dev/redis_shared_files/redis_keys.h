@@ -11,6 +11,7 @@ std::string _ball_location = "ball:location";
 std::string _paddle_location = "paddle_location";
 
 std::string _player_connected = "player:connected";
+std::string _player_response = "player:response";
 
 std::string _game_started = "game:started";
 
