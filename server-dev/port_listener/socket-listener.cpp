@@ -10,13 +10,22 @@
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
-     
+#include <iostream>
+#include <string>
+#include <hiredis/hiredis.h>
+#include "redis_shared_files/redis_functions.h"
+#include "redis_shared_files/redis_keys.h"
+
 #define TRUE   1 
 #define FALSE  0 
-#define PORT 8888 
+#define PORT 8888
      
 int main(int argc , char *argv[])  
 {  
+    std::string new_connection = "New User Connected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d\n";
+
+    redis_handler *redisHandler = new redis_handler();
+
     int opt = TRUE;  
     int master_socket , addrlen , new_socket , client_socket[30] , 
           max_clients = 30 , activity, i , valread , sd;  
@@ -29,7 +38,7 @@ int main(int argc , char *argv[])
     fd_set readfds;  
          
     //a message 
-    char *message = "ECHO Daemon v1.0 \r\n";  
+    //const char *message = "ECHO Daemon v1.0 \r\n";  
      
     //initialise all client_socket[] to 0 so not checked 
     for (i = 0; i < max_clients; i++)  
@@ -77,6 +86,10 @@ int main(int argc , char *argv[])
     addrlen = sizeof(address);  
     puts("Waiting for connections ...");  
          
+
+    int y_pos = 0;
+    const int ball_x = 0, ball_y = 0, score_a = 0, score_b = 0;
+    std::string reply = "";
     while(TRUE)  
     {  
         //clear the socket set 
@@ -122,17 +135,17 @@ int main(int argc , char *argv[])
             }  
              
             //inform user of socket number - used in send and receive commands 
-            printf("New connection , socket fd is %d , ip is : %s , port : %d 
-                  \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
-                  (address.sin_port));  
-           
+            //printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
+            //      (address.sin_port));
+
             //send new connection greeting message 
-            if( send(new_socket, message, strlen(message), 0) != strlen(message) )  
-            {  
-                perror("send");  
-            }  
+            reply = "Connected to marvin.webredirect.org";
+            // if( send(new_socket, reply.c_str(), strlen(reply.c_str()), 0) != strlen(reply.c_str()) )  
+            // {  
+            //     perror("send");  
+            // }  
                  
-            puts("Welcome message sent successfully");  
+            //puts("Welcome message sent successfully");  
                  
             //add new socket to array of sockets 
             for (i = 0; i < max_clients; i++)  
@@ -141,7 +154,10 @@ int main(int argc , char *argv[])
                 if( client_socket[i] == 0 )  
                 {  
                     client_socket[i] = new_socket;  
-                    printf("Adding to list of sockets as %d\n" , i);  
+                    printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
+
+                    redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
+                    //printf("Adding to list of sockets as %d\n" , i);  
                          
                     break;  
                 }  
@@ -157,7 +173,8 @@ int main(int argc , char *argv[])
             {  
                 //Check if it was for closing , and also read the 
                 //incoming message 
-                if ((valread = read( sd , buffer, 1024)) == 0)  
+                valread = read(sd, buffer, 1025);
+                if(std::string(buffer).substr(0, 3) == "~~~")
                 {  
                     //Somebody disconnected , get his details and print 
                     getpeername(sd , (struct sockaddr*)&address , \
@@ -176,7 +193,15 @@ int main(int argc , char *argv[])
                     //set the string terminating NULL byte on the end 
                     //of the data read 
                     buffer[valread] = '\0';  
-                    send(sd , buffer , strlen(buffer) , 0 );  
+                    
+                    y_pos = atoi(buffer);
+
+                    reply = '<' + std::to_string(y_pos) + ':' + std::to_string(ball_x) + ',' + std::to_string(ball_y) + ':' + std::to_string(score_a) + ',' + std::to_string(score_b) + '>';
+                    //std::string(y_pos + ':' + ball_x + ',' + ball_y + ':' + score_a + ',' + score_b);
+
+                    send(sd, reply.c_str(), strlen(reply.c_str()), 0);
+                    //send(sd , buffer , strlen(buffer) , 0 );
+                    std::cout << std::string(buffer) << std::endl;
                 }  
             }  
         }  

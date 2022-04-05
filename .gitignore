@@ -1,0 +1,7 @@
+**/.vscode
+**/build
+
+**/port_listener/shared_files
+**/pong_controller/shared_files
+socket-listener
+port_listener_current
