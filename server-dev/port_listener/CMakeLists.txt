@@ -8,6 +8,6 @@ find_package(Threads REQUIRED)
 
 file(COPY ${CMAKE_SOURCE_DIR}/../shared_files DESTINATION ${CMAKE_SOURCE_DIR})
 
-add_executable(port_listener socket-listener-threading.cpp)
+add_executable(port_listener socket-listener-test-test.cpp)
 target_link_libraries(port_listener PRIVATE ${HIREDIS_LIBRARY})
 target_link_libraries(port_listener PRIVATE Threads::Threads)
