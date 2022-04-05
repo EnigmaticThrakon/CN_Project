@@ -5,3 +5,5 @@
 **/pong_controller/shared_files
 socket-listener
 port_listener_current
+
+resource/_pycache_
