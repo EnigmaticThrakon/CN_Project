@@ -21,10 +21,26 @@ class Client():
 
     def recv_msg(self):
         try:
-            response = self.client.recv(2048).decode(self.format)
-            return response[0:response.find('>')+1]
+            while(1 == 1):
+                response = (str)(self.client.recv(2048))#.decode()#(self.format)
+
+                openingBracketPos = (int)(response.index('<'))
+                closingBracketPos = (int)(response.index('>', openingBracketPos))
+
+                if(openingBracketPos is not None and closingBracketPos is not None):
+                    try:
+                        temp_response = response[openingBracketPos:closingBracketPos + 1]
+
+                        if(temp_response[1:4].isnumeric()):
+                            return temp_response
+                    except Exception as temp:
+                        return "<000:000,000:000,000>"
+                else:
+                    return "<000:000,000:000,000>"
         except socket.error as e:
             print(e)
+        except Exception as ex:
+            print(ex)
 
     def disconnect(self):
         self.send_msg("~~~")
