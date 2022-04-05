@@ -20,11 +20,19 @@ def send(msg):
     client.send(message)
     print(client.recv(2048).decode(FORMAT))
 
+newline = "\n"
 index = 0
 while(1 == 1):
     send(str(index))
+
     print(client.recv(2048).decode(FORMAT))
+    print(newline)
     index = index + 1
+
+    if(index == 200):
+        break
+
+send("~~~")
 # send("500")
 # input()
 # send("200")
