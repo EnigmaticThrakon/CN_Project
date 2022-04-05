@@ -7,16 +7,18 @@ from resource.variables import *
 def main():
     clock = pygame.time.Clock()
     game = Game()
-
+    index = 0
     while True:
         try:
-            clock.tick(FPS)
+            #clock.tick(FPS)
             game.draw()
             keys = pygame.key.get_pressed()
             # Breaks loop if player presses escape
             if game.playerMovementHandler(keys) is False:
                 return
-            game.client.send_msg(str(int(game.player.y))[0:3])
+            player_y = (int)(game.player.y)
+            player_y_string = "{:03d}".format(player_y)
+            game.client.send_msg(player_y_string)
             game.set_game_info()
             # If the window is closed, end the program
             for event in pygame.event.get():
@@ -24,6 +26,9 @@ def main():
                     game.client.disconnect()
                     return
         except Exception as e:
+            index = index + 1
+            if(index > 10):
+                return
             pass
 
 # Begin the program
