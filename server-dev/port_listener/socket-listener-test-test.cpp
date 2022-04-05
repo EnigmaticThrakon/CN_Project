@@ -28,10 +28,20 @@ void status_update(int socket_id)
 {
     update_timer *timer = new update_timer();
     std::string reply = "20";
-    bool connected = true;
+    bool connected = true, transmitting = false;
+
+    while(!transmitting)
+    {
+        if(timer->elapsed_time() > 10) {
+            reply = redisHandler->get_key(std::to_string(socket_id) + ':' + _player_transmitting);
+        }
+
+        transmitting = (reply == "1");
+    }
+
     while (connected)
     {
-        if (timer->elapsed_time() > 1000)
+        if (timer->elapsed_time() > 100)
         {
             reply = redisHandler->get_key(std::to_string(socket_id) + ':' + _player_connected);
 
@@ -62,15 +72,6 @@ void status_update(int socket_id)
         }
     }
 
-    return;
-}
-
-void write_data(int socket_id, std::string data)
-{
-    // int socket_id = (int)argv[0];
-    // std::string data = std::string(argv[1]);
-    data = '<' + data + ":000,000:000,000>";
-    redisHandler->set_key(std::to_string(socket_id) + ':' + _test_response, data);
     return;
 }
 
@@ -206,9 +207,13 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    std::thread(write_data, client_socket[i], input_data).detach();
-                    // input_data = '<' + input_data + ":000,000:000,000>";
-                    // redisHandler->set_key(std::to_string(client_socket[i]) + ':' + _test_response, input_data);
+                    input_data = '<' + input_data + ":000,000:000,000>";
+
+                    for(int j = 0; j < 3; j++)
+                        input_data = input_data + input_data;
+
+                    redisHandler->set_key(std::to_string(client_socket[i]) + ':' + _test_response, input_data);
+                    redisHandler->set_key(std::to_string(client_socket[i]) + ':' + _player_transmitting, "1");
                     //std::cout << input_data << std::endl;
                 }
                 connection_mtx.unlock();
