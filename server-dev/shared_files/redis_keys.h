@@ -15,4 +15,6 @@ std::string _player_response = "player:response";
 
 std::string _game_started = "game:started";
 
+std::string _test_response = "test:response";
+
 #endif
