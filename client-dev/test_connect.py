@@ -22,13 +22,11 @@ def send(msg):
 
 index = 0
 while(1 == 1):
-    if(index == 0):
-        send("50")
-
+    send(str(index))
     print(client.recv(2048).decode(FORMAT))
-
-    # if(msvcrt.kbhit()):
-    #     client.send("100".encode(FORMAT))
-        #send("100")
-
-#send(DISCONNECT_MESSAGE)
+    index = index + 1
+# send("500")
+# input()
+# send("200")
+# input()
+# send("~~~")
