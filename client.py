@@ -9,8 +9,7 @@ class Client():
         self.address = (self.server, self.port)
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client.connect(self.address)
-        # self.is_right = bool(self.client.recv(2048).decode(self.format))
-        self.is_right = True
+        self.is_right = bool(self.client.recv(2048).decode(self.format))
         self.connected = True
 
 
@@ -22,7 +21,8 @@ class Client():
 
     def recv_msg(self):
         try:
-            return self.client.recv(2048).decode(self.format)
+            response = self.client.recv(2048).decode(self.format)
+            return response[0:response.find('>')+1]
         except socket.error as e:
             print(e)
 

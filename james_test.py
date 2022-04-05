@@ -30,7 +30,8 @@ class Ball():
 
 
 class Paddle():
-    def __init__(self, is_right):
+    def __init__(self, is_right, client=None):
+        self.client = client
         self.width = 20
         self.height = 100
         self.speed = 4
@@ -50,8 +51,6 @@ class Paddle():
             self.y -= self.speed
         else:
             self.y += self.speed
-        #TODO: Send client-side paddle location to server
-        # return self.client.send_msg(str(self.y))
 
     def set_loc(self, y):
         self.y = y
@@ -77,18 +76,14 @@ class Score:
 
 class Game():
     def __init__(self):
-        # Initalize client
+        # Initialize client
         self.client = Client()
-
         # Define game objects
-        self.player = Paddle(self.client.is_right)
+        self.player = Paddle(self.client.is_right, self.client)
         self.opponent = Paddle(not self.client.is_right)
         self.player_score = Score(self.client.is_right)
         self.opponent_score = Score(not self.client.is_right)
         self.ball = Ball()
-
-        # # TODO: Pull fake data in from server instead
-        # self.game_info = "<400:500,400:5,7>"
 
     def draw(self):
         WINDOW.fill(BLACK)
@@ -104,28 +99,23 @@ class Game():
             return self.player.move(up=True)
         if keys[pygame.K_DOWN] and self.player.y + self.player.speed + self.player.height <= HEIGHT:
             return self.player.move(up=False)
+        # If the player clicks escape quit the game and disconnect from the server
+        if keys[pygame.K_ESCAPE]:
+            pygame.quit()
+            self.client.disconnect()
+            return False
 
     def set_game_info(self):
-        # TODO: Uncomment this
         game_info_raw = self.client.recv_msg().strip()
-        print(game_info_raw)
         game_info = game_info_raw.split(":")
         # Get opponent pos
-        self.opponent.set_loc(float(game_info[0][1:-1]))
+        self.opponent.set_loc(int(game_info[0][1:]))
         # Get ball pos
-        self.ball.set_loc(float(game_info[1].split(",")[0]), float(game_info[1].split(",")[1]))
+        self.ball.set_loc(int(game_info[1].split(",")[0]), int(game_info[1].split(",")[1]))
         # Get player and opponent score
-        self.player_score.score = float(game_info[2].split(",")[0])
-        self.opponent_score.score = float(game_info[2].split(",")[1][0:-1])
+        self.player_score.score = int(game_info[2].split(",")[0])
+        self.opponent_score.score = int(game_info[2].split(",")[1][0:-1])
 
-    def fake_game_info(self):
-        game_info_splt = self.game_info.split(":")
-        game_info_splt[0] = "<" + str(float(game_info_splt[0][1:]) + 1)
-        game_info_splt[1] = str(float(game_info_splt[1].split(",")[0]) + 1) + "," + str(float(game_info_splt[1].split(",")[0]) + 1)
-        temp = ""
-        for x in game_info_splt:
-            temp += x + ":"
-        self.game_info = temp
 
 # Main function
 def main():
@@ -135,9 +125,6 @@ def main():
 
     while run:
         try:
-            # TODO: Delete this
-            # game.fake_game_info()
-
             clock.tick(FPS)
             game.draw()
             # If the window is closed, end the program
@@ -146,13 +133,13 @@ def main():
                     run = False
                     break
             keys = pygame.key.get_pressed()
-            game.playerMovementHandler(keys)
+            # Breaks loop if player presses escape
+            if game.playerMovementHandler(keys) is False:
+                return
+            game.client.send_msg(str(int(game.player.x)))
             game.set_game_info()
         except Exception as e:
-            print(e)
-    pygame.quit()
-    #TODO: Uncomment this
-    game.client.disconnect()
+            pass
 
 # Begin the program
 if __name__ == '__main__':
