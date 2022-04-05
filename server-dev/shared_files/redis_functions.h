@@ -1,12 +1,14 @@
 #ifndef REDIS_FUNCTIONS_H
 #define REDIS_FUNCTIONS_H
 
+#include <mutex>
 #include <hiredis/hiredis.h>
 #include <string>
 
 class redis_handler
 {
 private:
+    std::mutex mtx;
     redisContext *context;
     redisReply *reply;
 
@@ -35,15 +37,24 @@ public:
 
     void set_key(std::string key, std::string value)
     {
+        mtx.lock();
         redisCommand(context, "SET %s %s", key.c_str(), value.c_str());
+        mtx.unlock();
     }
 
     std::string get_key(std::string key)
     {
+        mtx.lock();
         reply = (redisReply*)redisCommand(context, "GET %s", key.c_str());
-        std::string returnString(reply->str);
+
+        std::string returnString = "";
+        if(reply->type == REDIS_REPLY_STRING) {
+            returnString = std::string(reply->str);
+        }
         
         freeReplyObject(reply);
+        mtx.unlock();
+        
         return returnString;
     }
 };

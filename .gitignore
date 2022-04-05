@@ -1,7 +1,7 @@
 **/.vscode
 **/build
 
-**/port_listener/redis_shared_files
-**/pong_controller/redis_shared_files
+**/port_listener/shared_files
+**/pong_controller/shared_files
 socket-listener
 port_listener_current
