@@ -29,7 +29,7 @@ class Game():
     def playerMovementHandler(self, keys):
         if keys[pygame.K_UP] and self.player.y - self.player.speed >= 0:
             return self.player.move(up=True)
-        if keys[pygame.K_DOWN] and self.player.y + self.player.speed + self.player.height <= HEIGHT:
+        if keys[pygame.K_DOWN] and self.player.y + self.player.speed + self.player.height <= SCREEN_HEIGHT:
             return self.player.move(up=False)
         # If the player clicks escape quit the game and disconnect from the server
         if keys[pygame.K_ESCAPE]:
