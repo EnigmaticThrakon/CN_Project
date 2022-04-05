@@ -23,8 +23,6 @@
 
 redis_handler *redisHandler = new redis_handler();
 std::mutex connection_mtx;
-struct sockaddr_in address;
-fd_set readfds;
 
 void status_update(int socket_id)
 {
@@ -67,40 +65,13 @@ void status_update(int socket_id)
     return;
 }
 
-void client_listener(int thread_id)
+void write_data(int socket_id, std::string data)
 {
-    int activity = 0;
-    bool connected = true;
-    char buffer[1024];
-    int addrlen = sizeof(address);
-    std::string input_data = "";
-    while(connected)
-    {
-        activity = select(thread_id + 1, &readfds, NULL, NULL, NULL);
-
-        if ((activity < 0) && (errno != EINTR)) { printf("select error"); }
-
-        if (FD_ISSET(thread_id, &readfds))
-        {
-            connection_mtx.lock();
-            buffer[read(thread_id, buffer, 1025)] = '\0';
-            input_data = std::string(buffer).substr(0, 3);
-
-            if (input_data == "~~~")
-            {
-                redisHandler->set_key(std::to_string(thread_id) + ':' + _player_connected, std::to_string(0));
-
-                getpeername(thread_id, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-            }
-            else
-            {
-                input_data = '<' + input_data + ":000,000:000,000>";
-                redisHandler->set_key(std::to_string(thread_id) + ':' + _test_response, input_data);
-                // std::cout << input_data << std::endl;
-            }
-            connection_mtx.unlock();
-        }
-    }
+    // int socket_id = (int)argv[0];
+    // std::string data = std::string(argv[1]);
+    data = '<' + data + ":000,000:000,000>";
+    redisHandler->set_key(std::to_string(socket_id) + ':' + _test_response, data);
+    return;
 }
 
 bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address)
@@ -149,11 +120,11 @@ int main(int argc, char *argv[])
     const std::string closed_connection = "User Disconnected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d\n";
     const int max_clients = 2;
 
-    // struct sockaddr_in address;
+    struct sockaddr_in address;
     std::thread client_threads[max_clients];
     int master_socket = 0, addrlen = sizeof(address), client_socket[max_clients], activity = 0, valread = 0, max_sd = 0;
     char buffer[1025];
-    // fd_set readfds;
+    fd_set readfds;
 
     for (int i = 0; i < max_clients; i++) { client_socket[i] = 0; }
 
@@ -161,14 +132,15 @@ int main(int argc, char *argv[])
 
     puts("Waiting for connections ...");
 
-    FD_ZERO(&readfds);
-
-    FD_SET(master_socket, &readfds);
 
     std::string input_data = "";
+
     int new_socket = -1;
     while (true)
     {
+        FD_ZERO(&readfds);
+
+        FD_SET(master_socket, &readfds);
         max_sd = master_socket;
 
         for (int i = 0; i < max_clients; i++)
@@ -204,7 +176,6 @@ int main(int argc, char *argv[])
 
                     send(new_socket, input_data.c_str(), strlen(input_data.c_str()), 0);
                     client_threads[i] = std::thread(status_update, new_socket);
-                    std::thread(client_listener, new_socket).detach();
 
                     printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
                     break;
@@ -235,8 +206,9 @@ int main(int argc, char *argv[])
                 }
                 else
                 {
-                    input_data = '<' + input_data + ":000,000:000,000>";
-                    redisHandler->set_key(std::to_string(client_socket[i]) + ':' + _test_response, input_data);
+                    std::thread(write_data, client_socket[i], input_data).detach();
+                    // input_data = '<' + input_data + ":000,000:000,000>";
+                    // redisHandler->set_key(std::to_string(client_socket[i]) + ':' + _test_response, input_data);
                     //std::cout << input_data << std::endl;
                 }
                 connection_mtx.unlock();
