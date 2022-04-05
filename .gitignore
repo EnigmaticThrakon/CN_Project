@@ -6,4 +6,4 @@
 socket-listener
 port_listener_current
 
-resource/_pycache_
+**/__pycache__
