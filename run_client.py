@@ -12,17 +12,17 @@ def main():
         try:
             clock.tick(FPS)
             game.draw()
-            # If the window is closed, end the program
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    run = False
-                    break
             keys = pygame.key.get_pressed()
             # Breaks loop if player presses escape
             if game.playerMovementHandler(keys) is False:
                 return
             game.client.send_msg(str(int(game.player.y))[0:3])
             game.set_game_info()
+            # If the window is closed, end the program
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game.client.disconnect()
+                    return
         except Exception as e:
             pass
 
