@@ -136,7 +136,7 @@ def main():
             # Breaks loop if player presses escape
             if game.playerMovementHandler(keys) is False:
                 return
-            game.client.send_msg(str(int(game.player.x)))
+            game.client.send_msg(str(int(game.player.y)))
             game.set_game_info()
         except Exception as e:
             pass
