@@ -1,4 +1,5 @@
 import socket
+import re
 
 class Client():
     def __init__(self):
@@ -11,6 +12,7 @@ class Client():
         self.client.connect(self.address)
         self.is_right = bool(self.client.recv(2048).decode(self.format))
         self.connected = True
+        self.temp_response = None
 
 
     def send_msg(self, msg):
@@ -21,26 +23,14 @@ class Client():
 
     def recv_msg(self):
         try:
-            while(1 == 1):
-                response = (str)(self.client.recv(2048))#.decode()#(self.format)
-
-                openingBracketPos = (int)(response.index('<'))
-                closingBracketPos = (int)(response.index('>', openingBracketPos))
-
-                if(openingBracketPos is not None and closingBracketPos is not None):
-                    try:
-                        temp_response = response[openingBracketPos:closingBracketPos + 1]
-
-                        if(temp_response[1:4].isnumeric()):
-                            return temp_response
-                    except Exception as temp:
-                        return "<000:000,000:000,000>"
-                else:
-                    return "<000:000,000:000,000>"
-        except socket.error as e:
+            response = str(self.client.recv(2048).decode(self.format))
+            print(response)
+            valid_response = re.search(r'<\d{3}:\d{3},\d{3}:\d{3},\d{3}>', response)
+            if valid_response:
+                self.temp_response = valid_response.group()
+            return self.temp_response
+        except Exception as e:
             print(e)
-        except Exception as ex:
-            print(ex)
 
     def disconnect(self):
         self.send_msg("~~~")

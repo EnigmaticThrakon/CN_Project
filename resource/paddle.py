@@ -2,11 +2,10 @@ from resource.variables import *
 
 
 class Paddle():
-    def __init__(self, is_right, client=None):
-        self.client = client
-        self.width = 20
-        self.height = 100
-        self.speed = 4
+    def __init__(self, is_right):
+        self.width = PADDLE_WIDTH
+        self.height = PADDLE_HEIGHT
+        self.speed = PADDLE_SPEED
         self.color = WHITE
         self.y = SCREEN_HEIGHT / 2 - self.height / 2
 

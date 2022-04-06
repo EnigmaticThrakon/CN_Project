@@ -10,7 +10,7 @@ class Game():
         # Initialize client
         self.client = Client()
         # Define game objects
-        self.player = Paddle(self.client.is_right, self.client)
+        self.player = Paddle(self.client.is_right)
         self.opponent = Paddle(not self.client.is_right)
         self.player_score = Score(self.client.is_right)
         self.opponent_score = Score(not self.client.is_right)
@@ -38,13 +38,8 @@ class Game():
             return False
 
     def set_game_info(self):
+        # Gets response from server
         server_response = self.client.recv_msg().strip()
-
-        if server_response == '<0:0,0:0,0>' or server_response[0] != '<':
-            server_response = self.prev_server_response
-        else:
-            self.prev_server_response = server_response
-
         game_info = server_response.split(":")
         # Get opponent pos
         self.opponent.set_loc(int(game_info[0][1:]))
