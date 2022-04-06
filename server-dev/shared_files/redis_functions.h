@@ -4,6 +4,8 @@
 #include <mutex>
 #include <hiredis/hiredis.h>
 #include <string>
+#include "game_constants.h"
+#include "redis_keys.h"
 
 class redis_handler
 {
@@ -33,6 +35,18 @@ public:
         }
 
         redisFree(context);
+    }
+
+    void reset_database()
+    {
+        mtx.lock();
+        redisCommand(context, "FLUSHALL");
+        mtx.unlock();
+
+        set_key(_left_player_response, std::to_string(_initial_lpaddle_y));
+        set_key(_right_player_response, std::to_string(_initial_rpaddle_y));
+        set_key(_rscore_location_x, std::to_string(_rscore_x));
+        set_key(_lscore_location_x, std::to_string(_lscore_x));
     }
 
     void set_key(std::string key, std::string value)
