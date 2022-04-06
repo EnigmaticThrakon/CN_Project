@@ -1,211 +1,256 @@
-//Example code: A simple server side code, which echos back the received message.
-//Handle multiple socket connections with select and fd_set on Linux 
-#include <stdio.h> 
-#include <string.h>   //strlen 
-#include <stdlib.h> 
-#include <errno.h> 
-#include <unistd.h>   //close 
-#include <arpa/inet.h>    //close 
-#include <sys/types.h> 
-#include <sys/socket.h> 
-#include <netinet/in.h> 
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros 
+// Example code: A simple server side code, which echos back the received message.
+// Handle multiple socket connections with select and fd_set on Linux
+#include <stdio.h>
+#include <stdexcept>
+#include <string.h> //strlen
+#include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>    //close
+#include <arpa/inet.h> //close
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros
 #include <iostream>
 #include <string>
 #include <hiredis/hiredis.h>
-#include "redis_shared_files/redis_functions.h"
-#include "redis_shared_files/redis_keys.h"
+#include "shared_files/redis_functions.h"
+#include "shared_files/redis_keys.h"
+#include "shared_files/timer.h"
+#include <thread>
 
-#define TRUE   1 
-#define FALSE  0 
 #define PORT 8888
-     
-int main(int argc , char *argv[])  
-{  
-    std::string new_connection = "New User Connected\nSocket FD is %d\nIP : %s:%d\nSocket Index: %d\n";
 
-    redis_handler *redisHandler = new redis_handler();
+redis_handler *redisHandler = new redis_handler();
+std::mutex connection_mtx;
+int left_player = -1, right_player = -1;
+std::string responseFormat = "<%s:%s,%s:%s,%s:%s>";
 
-    int opt = TRUE;  
-    int master_socket , addrlen , new_socket , client_socket[30] , 
-          max_clients = 30 , activity, i , valread , sd;  
-    int max_sd;  
-    struct sockaddr_in address;  
-         
-    char buffer[1025];  //data buffer of 1K 
-         
-    //set of socket descriptors 
-    fd_set readfds;  
-         
-    //a message 
-    //const char *message = "ECHO Daemon v1.0 \r\n";  
-     
-    //initialise all client_socket[] to 0 so not checked 
-    for (i = 0; i < max_clients; i++)  
-    {  
-        client_socket[i] = 0;  
-    }  
-         
-    //create a master socket 
-    if( (master_socket = socket(AF_INET , SOCK_STREAM , 0)) == 0)  
-    {  
-        perror("socket failed");  
-        exit(EXIT_FAILURE);  
-    }  
-     
-    //set master socket to allow multiple connections , 
-    //this is just a good habit, it will work without this 
-    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, 
-          sizeof(opt)) < 0 )  
-    {  
-        perror("setsockopt");  
-        exit(EXIT_FAILURE);  
-    }  
-     
-    //type of socket created 
-    address.sin_family = AF_INET;  
-    address.sin_addr.s_addr = INADDR_ANY;  
-    address.sin_port = htons( PORT );  
-         
-    //bind the socket to localhost port 8888 
-    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address))<0)  
-    {  
-        perror("bind failed");  
-        exit(EXIT_FAILURE);  
-    }  
-    printf("Listener on port %d \n", PORT);  
-         
-    //try to specify maximum of 3 pending connections for the master socket 
-    if (listen(master_socket, 3) < 0)  
-    {  
-        perror("listen");  
-        exit(EXIT_FAILURE);  
-    }  
-         
-    //accept the incoming connection 
-    addrlen = sizeof(address);  
-    puts("Waiting for connections ...");  
-         
+std::string get_response_string(std::string formattedString)
+{
+    for(int i = 0; i < 5; i++)
+        formattedString = formattedString + formattedString;
+    
+    return formattedString;
+}
 
-    int y_pos = 0;
-    const int ball_x = 0, ball_y = 0, score_a = 0, score_b = 0;
-    std::string reply = "";
-    while(TRUE)  
-    {  
-        //clear the socket set 
-        FD_ZERO(&readfds);  
-     
-        //add master socket to set 
-        FD_SET(master_socket, &readfds);  
-        max_sd = master_socket;  
-             
-        //add child sockets to set 
-        for ( i = 0 ; i < max_clients ; i++)  
-        {  
-            //socket descriptor 
-            sd = client_socket[i];  
-                 
-            //if valid socket descriptor then add to read list 
-            if(sd > 0)  
-                FD_SET( sd , &readfds);  
-                 
-            //highest file descriptor number, need it for the select function 
-            if(sd > max_sd)  
-                max_sd = sd;  
-        }  
-     
-        //wait for an activity on one of the sockets , timeout is NULL , 
-        //so wait indefinitely 
-        activity = select( max_sd + 1 , &readfds , NULL , NULL , NULL);  
-       
-        if ((activity < 0) && (errno!=EINTR))  
-        {  
-            printf("select error");  
-        }  
-             
-        //If something happened on the master socket , 
-        //then its an incoming connection 
-        if (FD_ISSET(master_socket, &readfds))  
-        {  
-            if ((new_socket = accept(master_socket, 
-                    (struct sockaddr *)&address, (socklen_t*)&addrlen))<0)  
-            {  
-                perror("accept");  
-                exit(EXIT_FAILURE);  
-            }  
-             
-            //inform user of socket number - used in send and receive commands 
-            //printf("New connection , socket fd is %d , ip is : %s , port : %d \n" , new_socket , inet_ntoa(address.sin_addr) , ntohs
-            //      (address.sin_port));
+void status_update()
+{
+    update_timer *timer = new update_timer();
+    std::string reply = "20";
+    bool connected = true, transmitting = false;
+    char buff[38];
 
-            //send new connection greeting message 
-            reply = "Connected to marvin.webredirect.org";
-            // if( send(new_socket, reply.c_str(), strlen(reply.c_str()), 0) != strlen(reply.c_str()) )  
-            // {  
-            //     perror("send");  
-            // }  
-                 
-            //puts("Welcome message sent successfully");  
-                 
-            //add new socket to array of sockets 
-            for (i = 0; i < max_clients; i++)  
-            {  
-                //if position is empty 
-                if( client_socket[i] == 0 )  
-                {  
-                    client_socket[i] = new_socket;  
-                    printf(new_connection.c_str(), new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port), i);
+    //while(redisHandler->get_key(_game_started) != "1") { }
+    while(redisHandler->get_key(_right_player_connected) != "1") { }
+    while (connected)
+    {
+        if (timer->elapsed_time() > 1000)
+        {
+            if (redisHandler->get_key(_right_player_connected) == "1") // && redisHandler->get_key(_left_player_connected) == "1")
+            {
+                snprintf(buff, sizeof(buff), responseFormat.c_str(), redisHandler->get_key(_right_player_response).c_str(), "000", "000", "000", "000", "000");
+                reply = get_response_string(std::string(buff));
 
-                    redisHandler->set_key(std::to_string(i) + ':' + _player_connected, std::to_string(1));
-                    //printf("Adding to list of sockets as %d\n" , i);  
-                         
-                    break;  
-                }  
-            }  
-        }  
-             
-        //else its some IO operation on some other socket
-        for (i = 0; i < max_clients; i++)  
-        {  
-            sd = client_socket[i];  
-                 
-            if (FD_ISSET( sd , &readfds))  
-            {  
-                //Check if it was for closing , and also read the 
-                //incoming message 
-                valread = read(sd, buffer, 1025);
-                if(std::string(buffer).substr(0, 3) == "~~~")
-                {  
-                    //Somebody disconnected , get his details and print 
-                    getpeername(sd , (struct sockaddr*)&address , \
-                        (socklen_t*)&addrlen);  
-                    printf("Host disconnected , ip %s , port %d \n" , 
-                          inet_ntoa(address.sin_addr) , ntohs(address.sin_port));  
-                         
-                    //Close the socket and mark as 0 in list for reuse 
-                    close( sd );  
-                    client_socket[i] = 0;  
-                }  
-                     
-                //Echo back the message that came in 
-                else 
-                {  
-                    //set the string terminating NULL byte on the end 
-                    //of the data read 
-                    buffer[valread] = '\0';  
-                    
-                    y_pos = atoi(buffer);
+                std::cout << reply << std::endl;
+                //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
+                send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
+            }
+            else
+            {
+                connected = false;
+            }
+            timer->reset();
+        }
+    }
 
-                    reply = '<' + std::to_string(y_pos) + ':' + std::to_string(ball_x) + ',' + std::to_string(ball_y) + ':' + std::to_string(score_a) + ',' + std::to_string(score_b) + '>';
-                    //std::string(y_pos + ':' + ball_x + ',' + ball_y + ':' + score_a + ',' + score_b);
+    return;
+}
 
-                    send(sd, reply.c_str(), strlen(reply.c_str()), 0);
-                    //send(sd , buffer , strlen(buffer) , 0 );
-                    std::cout << std::string(buffer) << std::endl;
-                }  
-            }  
-        }  
-    }  
-         
-    return 0;  
-}  
+bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address)
+{
+    if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    {
+        perror("socket failed");
+        exit(EXIT_FAILURE);
+        return false;
+    }
+
+    int opt = 1;
+    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt,
+                   sizeof(opt)) < 0)
+    {
+        perror("setsockopt");
+        exit(EXIT_FAILURE);
+        return false;
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(PORT);
+
+    if (bind(master_socket, (struct sockaddr *)&address, sizeof(address)) < 0)
+    {
+        perror("Bind Failed");
+        exit(EXIT_FAILURE);
+        return false;
+    }
+    printf("Listener on port %d \n", PORT);
+
+    if (listen(master_socket, 3) < 0)
+    {
+        perror("listen");
+        exit(EXIT_FAILURE);
+        return false;
+    }
+
+    redisHandler->reset_database();
+
+    return true;
+}
+
+int main(int argc, char *argv[])
+{
+    const std::string new_connection = "New User Connected\n%s Player\nSocket FD is %d\nIP : %s:%d\n";
+    const std::string closed_connection = "User Disconnected\n%s Player\nSocket FD is %d\nIP : %s:%d\n";
+    const int max_clients = 2;
+
+    struct sockaddr_in address;
+    std::thread client_threads[max_clients];
+    int master_socket = 0, addrlen = sizeof(address), client_socket[max_clients], activity = 0, valread = 0, max_sd = 0;
+    char buffer[1025];
+    fd_set readfds;
+
+    for (int i = 0; i < max_clients; i++) { client_socket[i] = 0; }
+
+    if(!initialize(master_socket, readfds, address)) { return -1; }
+
+    puts("Waiting for connections ...");
+
+    std::thread(status_update).detach();
+
+    std::string input_data = "";
+    int new_socket = -1;
+    
+    while (true)
+    {
+        FD_ZERO(&readfds);
+
+        FD_SET(master_socket, &readfds);
+        max_sd = master_socket;
+
+        if(right_player > -1)
+        {
+            FD_SET(right_player, &readfds);
+
+            if(right_player > max_sd)
+                max_sd = right_player;
+        }
+        if(left_player > -1)
+        {
+            FD_SET(left_player, &readfds);
+
+            if(left_player > max_sd)
+                max_sd = left_player;
+        }
+
+        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
+
+        if ((activity < 0) && (errno != EINTR)) { printf("select error"); }
+
+        if (FD_ISSET(master_socket, &readfds))
+        {
+            new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+
+            if (new_socket < 0)
+            {
+                perror("accept");
+                exit(EXIT_FAILURE);
+            }
+
+            if(right_player < 0)
+            {
+                right_player = new_socket;
+                
+                snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "111", "111", "111", "111", "111", "111");
+                input_data = get_response_string(std::string(buffer));
+                send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+
+                printf(new_connection.c_str(), "Right", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+            }
+            else if(left_player < 0)
+            {
+                left_player = new_socket;
+
+                snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
+                input_data = get_response_string(std::string(buffer));
+                send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+
+                printf(new_connection.c_str(), "Left", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+            }
+
+            new_socket = -1;
+        }
+
+        if(FD_ISSET(right_player, &readfds))
+        {
+            buffer[read(right_player, buffer, 1025)] = '\0';
+            input_data = std::string(buffer).substr(0, 3);
+
+            if(input_data == "~~~")
+            {
+                redisHandler->set_key(_right_player_connected, std::to_string(0));
+
+                    getpeername(right_player, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+                    printf(closed_connection.c_str(), "Right", right_player, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
+                    close(right_player);
+                    right_player = -1;
+            }
+            else 
+            {
+                if(redisHandler->get_key(_right_player_connected) != "1")
+                {              
+                    snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_right_player_response).c_str(), redisHandler->get_key(_rscore_location_x).c_str(), "000", "000", "000", "000");
+                    input_data = get_response_string(std::string(buffer));
+                    send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+
+                    redisHandler->set_key(_right_player_connected, std::to_string(1));
+                }
+
+                redisHandler->set_key(_right_player_response, input_data);
+            }
+        }
+        else if(FD_ISSET(left_player, &readfds))
+        {
+            buffer[read(left_player, buffer, 1025)] = '\0';
+            input_data = std::string(buffer).substr(0, 3);
+
+            if(input_data == "~~~")
+            {
+                redisHandler->set_key(_left_player_connected, std::to_string(0));
+
+                getpeername(left_player, (struct sockaddr *)&address, (socklen_t *)&addrlen);
+                printf(closed_connection.c_str(), "Left", left_player, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+
+                close(left_player);
+                left_player = -1;
+            }
+            else 
+            {
+                if(redisHandler->get_key(_left_player_connected) != "1")
+                {              
+                    snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_left_player_response).c_str(), redisHandler->get_key(_lscore_location_x).c_str(), "000", "000", "000", "000");
+                    input_data = get_response_string(std::string(buffer));
+                    send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+
+                    redisHandler->set_key(_left_player_connected, std::to_string(1));
+                }
+
+                redisHandler->set_key(_left_player_response, input_data);
+            }
+        }
+    }
+
+    return 0;
+}
