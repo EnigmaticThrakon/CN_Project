@@ -24,7 +24,6 @@
 redis_handler *redisHandler = new redis_handler();
 std::mutex connection_mtx;
 int left_player = -1, right_player = -1;
-std::string responseFormat = "<%s,%s:%s,%s:%s,%s>";
 
 std::string get_response_string(std::string formattedString)
 {

@@ -19,5 +19,8 @@ int _ball_width = 10;
 int _initial_ball_x = 0;
 int _initial_ball_y = 0;
 
+std::string responseFormat = "<%s,%s:%s,%s:%s,%s>";
+
+int _win = 5;
 
 #endif
