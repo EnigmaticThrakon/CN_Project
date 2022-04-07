@@ -159,7 +159,7 @@ private:
         _left_paddle = new game_component("left_paddle", _paddle_height, _paddle_width, _initial_lpaddle_x, _initial_lpaddle_y);
         _right_paddle = new game_component("right_paddle", _paddle_height, _paddle_width, _initial_rpaddle_x, _initial_rpaddle_y);
 
-        _bounce = false;
+        _right_score = _left_score = 0;
     }
 
     void format_string(std::string &input_string)
