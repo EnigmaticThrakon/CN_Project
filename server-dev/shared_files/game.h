@@ -135,7 +135,7 @@ private:
         return 0;
     }
 
-    bool paddle_collision(int input_y)
+    bool paddle_wall_collision(int input_y)
     {
         if(input_y > _window->get_top_edge())
             return true;
@@ -223,14 +223,14 @@ public:
     {
         if(left)
         {
-           if(!paddle_collision(input_y))
+           if(!paddle_wall_collision(input_y))
            {
                 _left_paddle->set_location(0, input_y, false);
            }
             return;
         }
         
-        if(!paddle_collision(input_y))
+        if(!paddle_wall_collision(input_y))
         {
             _right_paddle->set_location(0, input_y, false);
         }
