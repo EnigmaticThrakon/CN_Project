@@ -7,8 +7,14 @@ from resource.variables import *
 
 class Game():
     def __init__(self):
+        # Initialize pygame
+        pygame.init()  # Import and initialize pygame
+        self.window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        pygame.display.set_caption("\"Ping\" Pong")
+
         # Initialize client
         self.client = Client()
+
         # Define game objects
         self.player = Paddle(self.client.is_right)
         self.opponent = Paddle(not self.client.is_right)
@@ -17,13 +23,10 @@ class Game():
         self.ball = Ball()
         self.prev_server_response = None
 
-    def draw(self):
-        WINDOW.fill(BLACK)
-        for paddle in [self.player, self.opponent]:
-            paddle.draw(WINDOW)
-        for score in [self.player_score, self.opponent_score]:
-            score.draw(WINDOW)
-        self.ball.draw(WINDOW)
+    def draw(self, objects):
+        self.window.fill(BLACK)
+        for object in objects:
+            object.draw(self.window)
         pygame.display.update()
 
     def playerMovementHandler(self, keys):

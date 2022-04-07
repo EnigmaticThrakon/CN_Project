@@ -13,8 +13,3 @@ PADDLE_SPEED = 1
 PADDLE_HEIGHT = 100
 PADDLE_WIDTH = 20
 PADDLE_STARTING_Y = SCREEN_HEIGHT / 2 - PADDLE_HEIGHT / 2
-
-
-pygame.init()  # Import and initialize pygame
-WINDOW = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  # Generate a window of size SIZE
-pygame.display.set_caption("\"Ping\" Pong")  # Set window caption
