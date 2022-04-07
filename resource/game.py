@@ -42,8 +42,10 @@ class Game():
 
     def set_game_info(self):
         # Gets response from server
-        server_response = self.client.recv_msg().strip()
-        game_info = server_response.split(":")
+        server_response = self.client.recv_msg()
+        if server_response is None:
+            return
+        game_info = server_response.strip().split(":")
         # Get opponent pos
         self.opponent.set_loc(int(game_info[0][1:]))
         # Get ball pos
