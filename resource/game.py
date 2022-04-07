@@ -9,18 +9,15 @@ from resource.variables import *
 class Game():
     def __init__(self):
         # Initialize pygame
-        pygame.init()  # Import and initialize pygame
+        pygame.init()
         self.window = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption("\"Ping\" Pong")
 
-        # Initialize client
-        self.client = Client()
-
-        # Define game objects
-        self.player = Paddle(self.client.is_right)
-        self.opponent = Paddle(not self.client.is_right)
-        self.player_score = Score(self.client.is_right)
-        self.opponent_score = Score(not self.client.is_right)
+        # Define game objects and initialize
+        self.player = Paddle()
+        self.opponent = Paddle()
+        self.player_score = Score()
+        self.opponent_score = Score()
         self.ball = Ball()
         # Initialize other variables
         self.prev_server_response = None
@@ -56,16 +53,27 @@ class Game():
             self.client.disconnect()
             return False
 
-    def set_game_info(self):
-        # Gets response from server
-        server_response = self.client.recv_msg()
+    def parse_response(self, server_response=None):
+        # Gets response from server, parse, and return
         if server_response is None:
-            return
-        game_info = server_response.strip().split(":")
-        # Get opponent pos
-        self.opponent.set_loc(int(game_info[0][1:]))
-        # Get ball pos
-        self.ball.set_loc(int(game_info[1].split(",")[0]), int(game_info[1].split(",")[1]))
-        # Get player and opponent score
-        self.player_score.score = int(game_info[2].split(",")[0])
-        self.opponent_score.score = int(game_info[2].split(",")[1][0:-1])
+            server_response = self.client.recv_msg()
+        server_response = server_response.strip().split(":")
+        return [int(server_response[0].split(",")[0][1:]),
+                int(server_response[0].split(",")[1]),
+                int(server_response[1].split(",")[0]),
+                int(server_response[1].split(",")[1]),
+                int(server_response[2].split(",")[0]),
+                int(server_response[2].split(",")[1][0:-1])]
+
+    def set_game_info(self, server_response):
+        # Set ball position
+        self.ball.set_loc(server_response[2], server_response[3])
+        # Set opponent paddle position and scores
+        if self.player_right:
+            self.opponent.set_loc(server_response[0])
+            self.player_score.score = server_response[5]
+            self.opponent_score.score = server_response[4]
+        else:
+            self.opponent.set_loc(server_response[1])
+            self.player_score.score = server_response[4]
+            self.opponent_score.score = server_response[5]

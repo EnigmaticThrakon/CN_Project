@@ -1,14 +1,16 @@
 import pygame
+from resource.text import Text
 from resource.variables import *
 
 class Button:
-    def __init__(self, x, y, width, height, hover_color, default_color):
+    def __init__(self, x, y, width, height, hover_color, default_color, text_obj):
         self.x = x
         self.y = y
         self.width = width
         self.height = height
         self.hover_color = hover_color
         self.default_color = default_color
+        self.button_text = text_obj
 
     def create_button(self, window):
         mouse = pygame.mouse.get_pos()
@@ -22,5 +24,9 @@ class Button:
             self.draw(window, self.default_color)
 
     def draw(self, window, color):
+        # Draw button
         pygame.draw.rect(window, color, (self.x, self.y, self.width, self.height))
-        pygame.display.update()
+        # Draw text on button
+        self.button_text.x = self.x + self.width / 16
+        self.button_text.y = self.y + self.height / 8
+        self.button_text.draw(window)
