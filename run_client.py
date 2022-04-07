@@ -1,17 +1,27 @@
 import pygame
+import time
 from resource.text import Text
 from resource.button import Button
 from resource.game import Game
 from resource.variables import *
 
 def start_game(game, clock):
+    # TODO: have gregg send back ack when both clients connected then show start button
+    # TODO: fix latency
     title_text = Text(75, WHITE, "\"PING\" PONG", 125, 100)
     start_text = Text(40, BLACK, "START")
     start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
     while True:
         game.window.fill(BLACK)
         title_text.draw(game.window)
+        # Fade title screen to black once button is clicked
         if start_button.create_button(game.window):
+            for rgb in range(255, -1, -1):
+                title_text.color = (rgb, rgb, rgb)
+                title_text.draw(game.window)
+                start_button.draw(game.window, (rgb, rgb, rgb))
+                pygame.display.update()
+                time.sleep(.005)
             return True
         # If the window is closed, end the program
         for event in pygame.event.get():
@@ -42,17 +52,17 @@ def game_loop(game, clock):
 # Main function
 def main():
     index = 0
-    # try:
-    game = Game()
-    clock = pygame.time.Clock()
-    if not start_game(game, clock):
-        return
-    game_loop(game, clock)
-    # except Exception as ex:
-    #     print(ex)
-    #     index = index + 1
-    #     if (index > 10):
-    #         return
+    try:
+        game = Game()
+        clock = pygame.time.Clock()
+        if not start_game(game, clock):
+            return
+        game_loop(game, clock)
+    except Exception as ex:
+        print(ex)
+        index = index + 1
+        if (index > 10):
+            return
 
 
 # Begin the program
