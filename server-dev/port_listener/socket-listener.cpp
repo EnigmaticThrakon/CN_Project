@@ -211,9 +211,9 @@ int main(int argc, char *argv[])
             {
                 if(redisHandler->get_key(_right_player_connected) != "1")
                 {              
-                    snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_right_player_response).c_str(), redisHandler->get_key(_rscore_location_x).c_str(), "000", "000", "000", "000");
-                    input_data = get_response_string(std::string(buffer));
-                    send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+                    // snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_right_player_response).c_str(), redisHandler->get_key(_rscore_location_x).c_str(), "000", "000", "000", "000");
+                    // input_data = get_response_string(std::string(buffer));
+                    // send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
 
                     redisHandler->set_key(_right_player_connected, std::to_string(1));
                 }
