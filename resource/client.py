@@ -16,16 +16,12 @@ class Client():
         self.connected = True
         # Receive player screen side. Format = <000,000:000,000:000:000> (left) or <111,111:111,111:111:111> (right)
         self.player_screen_side = self.recv_msg()
-        # TODO: Remove this
-        self.send_msg("debug")
-        # Receive initial paddle and score position. Format = <player_x,score_x:xxx,xxx:xxx:xxx>  (all three digit integers)
-        self.start_pos = self.recv_msg()
 
     def send_msg(self, msg):
         try:
             self.client.send(msg.encode(self.format))
-        except socket.error as e:
-            print(e)
+        except Exception as ex:
+            print(ex)
 
     def recv_msg(self):
         try:
@@ -35,8 +31,8 @@ class Client():
             if valid_response:
                 self.temp_response = valid_response.group()
             return self.temp_response
-        except Exception as e:
-            print(e)
+        except Exception as ex:
+            print(ex)
 
     def disconnect(self):
         self.send_msg("~~~")

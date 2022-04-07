@@ -1,10 +1,16 @@
 import pygame
 
 # Game variables
-SCREEN_WIDTH, SCREEN_HEIGHT = 1000, 800             # Width and height of game window
-FPS = 180                                           # Set max FPS to 60
-WHITE = (255, 255, 255)                             # RGB values for white
-BLACK = (0, 0, 0)                                   # RGB values for black
+SCREEN_WIDTH = 1000
+SCREEN_HEIGHT = 800
+FPS = 180
+# Colors
+WHITE = (255, 255, 255)
+LIGHT_GREY = (218, 218, 218)
+BLACK = (0, 0, 0)
+# Fonts
+SLKSCREB = 'slkscreb.ttf'
+PONG = 'pong_font.ttf'
 # Ball variables
 BALL_SIZE = 20
 BALL_STARTING_POS = (SCREEN_WIDTH / 2 - BALL_SIZE / 2, SCREEN_HEIGHT / 2 - BALL_SIZE / 2)
@@ -21,8 +27,3 @@ SCORE_SIZE = 120
 SCORE_STARTING_Y = 50
 SCORE_STARTING_RIGHT_X = 650
 SCORE_STARTING_LEFT_X = 290
-
-
-pygame.init()  # Import and initialize pygame
-WINDOW = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))  # Generate a window of size SIZE
-pygame.display.set_caption("\"Ping\" Pong")  # Set window caption

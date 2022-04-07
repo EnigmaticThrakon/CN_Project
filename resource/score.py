@@ -7,7 +7,7 @@ class Score:
         self.color = WHITE
         self.score = STARTING_SCORE
         self.size = SCORE_SIZE
-        self.font = pygame.font.Font('pong_font.ttf', self.size)
+        self.font = pygame.font.Font(PONG, self.size)
         self.y = SCORE_STARTING_Y
         self.x = None
 
