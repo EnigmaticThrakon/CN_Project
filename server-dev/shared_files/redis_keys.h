@@ -29,5 +29,6 @@ std::string _right_player_response = "right:player:response";
 
 std::string _game_started = "game:started";
 std::string _game_setup = "game:setup";
+std::string _game_status = "game:status";
 
 #endif
