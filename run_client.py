@@ -8,15 +8,17 @@ def start_game(game, clock):
     while True:
         try:
             game.window.fill(BLACK)
-            clock.tick(FPS)
-            start_button = Button()
-            start_button.create_button(game.window)
+            start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE)
+            if start_button.create_button(game.window):
+                return
             # If the window is closed, end the program
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     game.client.disconnect()
                     return
+            clock.tick(FPS)
         except Exception as ex:
+            print(ex)
             index = index + 1
             if(index > 10):
                 return
@@ -39,6 +41,7 @@ def game_loop(game, clock):
                     game.client.disconnect()
                     return
         except Exception as ex:
+            print(ex)
             index = index + 1
             if(index > 10):
                 return
@@ -48,7 +51,7 @@ def main():
     game = Game()
     clock = pygame.time.Clock()
     start_game(game, clock)
-    # game_loop(game, clock)
+    game_loop(game, clock)
 
 
 # Begin the program
