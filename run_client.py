@@ -5,7 +5,7 @@ from resource.game import Game
 from resource.variables import *
 
 def start_game(game, clock):
-    title_text = Text(200, WHITE, "PONG", 125, 100)
+    title_text = Text(75, WHITE, "\"PING\" PONG", 125, 100)
     start_text = Text(40, BLACK, "START")
     start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
     while True:
