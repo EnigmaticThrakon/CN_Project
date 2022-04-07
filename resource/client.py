@@ -24,19 +24,18 @@ class Client():
     def send_msg(self, msg):
         try:
             self.client.send(msg.encode(self.format))
-        except socket.error as e:
-            print(e)
+        except Exception as ex:
+            print(ex)
 
     def recv_msg(self):
         try:
             response = str(self.client.recv(2048).decode(self.format))
-            # Format = <player_x,score_x:ball_x,ball_y:player_score,opponent_score> (all three digit integers)
-            valid_response = re.search(r'<\d{3},\d{3}:\d{3},\d{3}:\d{3},\d{3}>', response)
+            valid_response = re.search(r'<\d{3}:\d{3},\d{3}:\d{3},\d{3}>', response)
             if valid_response:
                 self.temp_response = valid_response.group()
             return self.temp_response
-        except Exception as e:
-            print(e)
+        except Exception as ex:
+            print(ex)
 
     def disconnect(self):
         self.send_msg("~~~")
