@@ -3,17 +3,13 @@ from resource.variables import *
 
 
 class Score:
-    def __init__(self, is_right):
+    def __init__(self):
         self.color = WHITE
-        self.score = 0
-        self.size = 100
+        self.score = STARTING_SCORE
+        self.size = SCORE_SIZE
         self.font = pygame.font.Font('pong_font.ttf', self.size)
-        self.y = SCREEN_HEIGHT / 16
-
-        if is_right:
-            self.x = (SCREEN_WIDTH / 2) + (SCREEN_WIDTH / 6)
-        else:
-            self.x = (SCREEN_WIDTH / 2) - (SCREEN_WIDTH / 6) - self.size / 2
+        self.y = SCORE_STARTING_Y
+        self.x = None
 
     def draw(self, window):
         render = self.font.render(str(int(self.score)), True, self.color)

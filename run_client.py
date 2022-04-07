@@ -7,7 +7,7 @@ from resource.variables import *
 def main():
     clock = pygame.time.Clock()
     game = Game()
-
+    index = 0
     while True:
         try:
             clock.tick(FPS)
@@ -16,15 +16,18 @@ def main():
             # Breaks loop if player presses escape
             if game.playerMovementHandler(keys) is False:
                 return
-            game.client.send_msg(str(int(game.player.y))[0:3])
-            game.set_game_info()
+            # Send player position, parse response, and set game info
+            game.client.send_msg("{:03d}".format(int(game.player.y)))
+            game.set_game_info(game.parse_response())
             # If the window is closed, end the program
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     game.client.disconnect()
                     return
         except Exception as e:
-            pass
+            index = index + 1
+            if(index > 10):
+                return
 
 # Begin the program
 if __name__ == '__main__':
