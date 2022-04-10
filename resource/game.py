@@ -22,19 +22,19 @@ class Game():
         # Initialize other variables
         self.prev_server_response = None
         # Initialize client and set player x positions
-        self.client = Client()
-        if self.parse_response(self.client.player_screen_side)[0] == 111:
-            self.player_right = True
-            self.player.x = PADDLE_STARTING_RIGHT_X
-            self.opponent.x = PADDLE_STARTING_LEFT_X
-            self.player_score.x = SCORE_STARTING_RIGHT_X
-            self.opponent_score.x = SCORE_STARTING_LEFT_X
-        else:
-            self.player_right = False
-            self.player.x = PADDLE_STARTING_LEFT_X
-            self.opponent.x = PADDLE_STARTING_RIGHT_X
-            self.player_score.x = SCORE_STARTING_LEFT_X
-            self.opponent_score.x = SCORE_STARTING_RIGHT_X
+        # self.client = Client()
+        # if self.parse_response(self.client.player_screen_side)[0] == 111:
+        #     self.player_right = True
+        #     self.player.x = PADDLE_STARTING_RIGHT_X
+        #     self.opponent.x = PADDLE_STARTING_LEFT_X
+        #     self.player_score.x = SCORE_STARTING_RIGHT_X
+        #     self.opponent_score.x = SCORE_STARTING_LEFT_X
+        # else:
+        #     self.player_right = False
+        #     self.player.x = PADDLE_STARTING_LEFT_X
+        #     self.opponent.x = PADDLE_STARTING_RIGHT_X
+        #     self.player_score.x = SCORE_STARTING_LEFT_X
+        #     self.opponent_score.x = SCORE_STARTING_RIGHT_X
 
     def draw(self, objects):
         self.window.fill(BLACK)

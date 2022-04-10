@@ -27,3 +27,7 @@ SCORE_SIZE = 120
 SCORE_STARTING_Y = 50
 SCORE_STARTING_RIGHT_X = 650
 SCORE_STARTING_LEFT_X = 290
+
+keys = {pygame.K_UP: 'up', pygame.K_DOWN: 'down', pygame.K_RIGHT: 'right', pygame.K_LEFT: 'left',
+        pygame.K_a: 'a', pygame.K_b: 'b'}
+sequence = ['up', 'up', 'down', 'down', 'left', 'right', 'left', 'right', 'b', 'a']
