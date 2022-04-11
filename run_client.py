@@ -32,7 +32,7 @@ def start_game(game, clock):
                 time.sleep(.005)
                 # TODO: uncomment these
             game.initialize_client()
-            while game.parse_response(game.client.recv_msg)[0] != 999:
+            while game.parse_response(game.client.player_screen_side)[0] != 999:
             # while True:
                 game.window.fill(BLACK)
                 clock.tick(FPS)
@@ -78,17 +78,17 @@ def game_loop(game, clock):
 # Main function
 def main():
     index = 0
-    try:
-        game = Game()
-        clock = pygame.time.Clock()
-        if not start_game(game, clock):
-            return
-        game_loop(game, clock)
-    except Exception as ex:
-        print(ex)
-        index = index + 1
-        if (index > 10):
-            return
+    # try:
+    game = Game()
+    clock = pygame.time.Clock()
+    if not start_game(game, clock):
+        return
+    game_loop(game, clock)
+    # except Exception as ex:
+    #     print(ex)
+    #     index = index + 1
+    #     if (index > 10):
+    #         return
 
 
 # Begin the program
