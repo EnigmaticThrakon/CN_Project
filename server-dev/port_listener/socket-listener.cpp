@@ -14,9 +14,9 @@
 #include <iostream>
 #include <string>
 #include <hiredis/hiredis.h>
-#include "shared_files/redis_functions.h"
-#include "shared_files/redis_keys.h"
-#include "shared_files/timer.h"
+#include "../shared_files/redis_functions.h"
+#include "../shared_files/redis_keys.h"
+#include "../shared_files/timer.h"
 #include <thread>
 
 #define PORT 8888
