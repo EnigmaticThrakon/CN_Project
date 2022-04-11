@@ -37,6 +37,7 @@ class Game():
             self.opponent.x = PADDLE_STARTING_RIGHT_X
             self.player_score.x = SCORE_STARTING_LEFT_X
             self.opponent_score.x = SCORE_STARTING_RIGHT_X
+        self.client.send_msg("debug")
 
     def draw(self, objects):
         self.window.fill(BLACK)
