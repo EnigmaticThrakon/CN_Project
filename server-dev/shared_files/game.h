@@ -39,7 +39,12 @@ public:
         _previous_location_y = _location_y;
 
         _location_x = input_x;
-        _location_y = input_x;
+        _location_y = input_y;
+
+        _edge_top = _location_y + _component_height / 2;
+        _edge_bottom = _location_y - _component_height / 2;
+        _edge_right = _location_x + _component_width / 2;
+        _edge_left = _location_x - _component_width / 2;
 
         if(!ball)
         {
@@ -52,6 +57,15 @@ public:
     int get_bottom_edge() { return _edge_bottom; }
     int get_left_edge() { return _edge_left; }
     int get_right_edge() { return _edge_right; }
+    void set_edges(int input_bottom, int input_top, int input_left, int input_right) 
+    {
+        _edge_bottom = input_bottom;
+        _edge_top = input_top;
+        _edge_right = input_right;
+        _edge_left = input_left;
+
+        return;
+    }
 
     int get_height() { return _component_height; }
     int get_width() { return _component_width; }
@@ -71,22 +85,22 @@ private:
     game_component *_ball, *_left_paddle, *_right_paddle, *_window, *_play_area;
     int _left_score, _right_score, _win_point;
 
-    void check_ball_collision()
+    int check_ball_collision()
     {
+        int returnValue = 0;
         if(_ball->get_top_edge() >= _play_area->get_top_edge())
             calc_ball_trajectory(2);
         
         if(_ball->get_left_edge() <= _play_area->get_left_edge())
-            check_goal();
+            returnValue = check_goal();
 
         if(_ball->get_right_edge() >= _play_area->get_right_edge())
-            check_goal();
-
+            returnValue = check_goal();
 
         if(_ball->get_bottom_edge()<= _play_area->get_bottom_edge())
             calc_ball_trajectory(0);
 
-        return;
+        return returnValue;
     }
 
     int check_goal()
@@ -94,18 +108,14 @@ private:
         if(_ball->get_left_edge() <= _play_area->get_left_edge())
         {
             if(_ball->get_bottom_edge() >= _left_paddle->get_top_edge() || _ball->get_top_edge() <= _left_paddle->get_bottom_edge())
-            {
                 return -1;
-            }
             
             calc_ball_trajectory(1);
         }
         else if(_ball->get_right_edge() >= _play_area->get_right_edge())
         {
             if(_ball->get_bottom_edge() >= _right_paddle->get_top_edge() || _ball->get_top_edge() <= _right_paddle->get_bottom_edge())
-            {
                 return 1;
-            }
 
             calc_ball_trajectory(3);
         }
@@ -146,27 +156,33 @@ private:
         else   
             _right_score++;
 
-        reset_game();
+        reset_game(1);
     }
 
-    void reset_game()
+    void reset_game(int indicator)
     {
-        free(_ball);
-        free(_left_paddle);
-        free(_right_paddle);
+        if(indicator != 0)
+        {
+            free(_ball);
+            free(_left_paddle);
+            free(_right_paddle);
+        }
 
         _ball = new game_component("ball", _ball_height, _ball_width, _initial_ball_x, _initial_ball_y);
+        _ball->set_velocity(_initial_ball_velocity_x, _initial_ball_velocity_y);
+
         _left_paddle = new game_component("left_paddle", _paddle_height, _paddle_width, _initial_lpaddle_x, _initial_lpaddle_y);
         _right_paddle = new game_component("right_paddle", _paddle_height, _paddle_width, _initial_rpaddle_x, _initial_rpaddle_y);
 
-        _right_score = _left_score = 0;
+        if(indicator % 2 == 0)
+            _right_score = _left_score = 0;
     }
 
     void format_string(std::string &input_string)
     {
         if(input_string.length() < 3)
         {
-            for(int i = 0; i < 3 - input_string.length(); i++)
+            for(int i = 0; i <= 3 - input_string.length(); i++)
                 input_string = "0" + input_string;
 
             return;
@@ -181,13 +197,12 @@ public:
     pong_game()
     {
         _win_point = _win;
-        _left_score = _right_score = 0;
-        _ball = new game_component("ball", _ball_height, _ball_width, _initial_ball_x, _initial_ball_y);
-        _left_paddle = new game_component("left_paddle", _paddle_height, _paddle_width, _initial_lpaddle_x, _initial_lpaddle_y);
-        _right_paddle = new game_component("right_paddle", _paddle_height, _paddle_width, _initial_rpaddle_x, _initial_rpaddle_y);
+        reset_game(2);
 
         _window = new game_component("window", _screen_height, _screen_width, 0, 0);
+        _window->set_edges(0, _screen_height, 0, _screen_width);
         _play_area = new game_component("play_area", _screen_height, _right_paddle->get_left_edge() - _left_paddle->get_right_edge(), 0, 0);
+        _play_area->set_edges(0, _screen_height, _left_paddle->get_right_edge(), _right_paddle->get_left_edge());
     }
 
     ~pong_game() 
@@ -199,13 +214,20 @@ public:
         free(_play_area);
     }
 
-    void update_ball_location()
+    bool update_ball_location()
     {
         int component_x = 0, component_y = 0;
         
         _ball->set_location(_ball->get_location_x() + _ball->get_velocity_x(), _ball->get_location_y() + _ball->get_velocity_y(), true);
-        check_ball_collision();
-        return;
+        int goal = check_ball_collision();
+
+        if(goal != 0)
+        {
+            update_score(goal == 1 ? true : false);
+            return true;
+        }
+
+        return false;
     }
 
     void update_paddle_location(int input_y, bool left)
@@ -213,14 +235,14 @@ public:
         if(left)
         {
            if(!paddle_wall_collision(input_y))
-                _left_paddle->set_location(_left_paddle->get_location_x(), input_y, false);
+                _left_paddle->set_location(_left_paddle->get_location_x(), input_y - _left_paddle->get_height() / 2, false);
            else
                 _left_paddle->set_location(_left_paddle->get_location_x(), _play_area->get_top_edge() - _left_paddle->get_height(), false);
             return;
         }
         
         if(!paddle_wall_collision(input_y))
-            _right_paddle->set_location(_right_paddle->get_location_x(), input_y, false);
+            _right_paddle->set_location(_right_paddle->get_location_x(), input_y - _right_paddle->get_height() / 2, false);
         else
             _right_paddle->set_location(_right_paddle->get_location_x(), _play_area->get_top_edge() - _right_paddle->get_height(), false);
         return;
@@ -228,7 +250,7 @@ public:
 
     std::string get_lpaddle_location()
     {
-        std::string returnValue = std::to_string(_left_paddle->get_location_y());
+        std::string returnValue = std::to_string(_left_paddle->get_top_edge());
         format_string(returnValue);
 
         return returnValue;
@@ -236,7 +258,7 @@ public:
 
     std::string get_rpaddle_location()
     {
-        std::string returnValue = std::to_string(_right_paddle->get_location_y());
+        std::string returnValue = std::to_string(_right_paddle->get_top_edge());
         format_string(returnValue);
 
         return returnValue;
@@ -244,7 +266,7 @@ public:
 
     std::string get_ball_location_x()
     {
-        std::string returnValue = std::to_string(_ball->get_location_x());
+        std::string returnValue = std::to_string(_ball->get_left_edge());
         format_string(returnValue);
 
         return returnValue;
@@ -252,7 +274,7 @@ public:
 
     std::string get_ball_location_y()
     {
-        std::string returnValue = std::to_string(_ball->get_location_y());
+        std::string returnValue = std::to_string(_ball->get_top_edge());
         format_string(returnValue);
 
         return returnValue;
