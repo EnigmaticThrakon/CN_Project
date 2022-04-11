@@ -21,6 +21,8 @@ class Game():
         self.ball = Ball()
         # Initialize other variables
         self.prev_server_response = None
+
+    def initialize_client(self):
         # Initialize client and set player x positions
         self.client = Client()
         if self.parse_response(self.client.player_screen_side)[0] == 111:
