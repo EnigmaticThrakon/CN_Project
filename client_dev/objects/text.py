@@ -1,5 +1,5 @@
 import pygame
-from resource.variables import *
+from client_dev.variables import *
 
 class Text:
     def __init__(self, size, color, message, x=None, y=None):

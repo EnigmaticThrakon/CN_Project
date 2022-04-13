@@ -1,9 +1,9 @@
 import pygame
-from resource.client import Client
-from resource.ball import Ball
-from resource.paddle import Paddle
-from resource.score import Score
-from resource.variables import *
+from client_dev.objects.ball import Ball
+from client_dev.objects.paddle import Paddle
+from client_dev.objects.score import Score
+from client_dev.client import Client
+from client_dev.variables import *
 
 
 class Game():

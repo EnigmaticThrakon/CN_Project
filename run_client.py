@@ -1,9 +1,9 @@
 import pygame
 import time
-from resource.text import Text
-from resource.button import Button
-from resource.game import Game
-from resource.variables import *
+from client_dev.objects.text import Text
+from client_dev.objects.button import Button
+from client_dev.game import Game
+from client_dev.variables import *
 
 def start_game(game, clock):
     # Initialize start button and title

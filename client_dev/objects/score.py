@@ -1,5 +1,5 @@
 import pygame
-from resource.variables import *
+from client_dev.variables import *
 
 
 class Score:

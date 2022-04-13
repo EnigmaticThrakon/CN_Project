@@ -1,6 +1,5 @@
 import pygame
-from resource.text import Text
-from resource.variables import *
+from client_dev.variables import *
 
 class Button:
     def __init__(self, x, y, width, height, hover_color, default_color, text_obj):
