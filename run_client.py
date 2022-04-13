@@ -6,8 +6,6 @@ from resource.game import Game
 from resource.variables import *
 
 def start_game(game, clock):
-    # TODO: have gregg send back ack when both clients connected then show start button
-    # TODO: fix latency
     # Initialize start button and title
     title_text = Text(75, WHITE, "\"PING\" PONG", 125, 100)
     start_text = Text(40, BLACK, "START")
@@ -30,10 +28,10 @@ def start_game(game, clock):
                 clock.tick(FPS)
                 pygame.display.update()
                 time.sleep(.005)
-                # TODO: uncomment these
             game.initialize_client()
-            while game.parse_response(game.client.player_screen_side)[0] != 999:
-            # while True:
+            response = ""
+            while response != 999:
+                response = game.parse_response(game.client.recv_msg())[0]
                 game.window.fill(BLACK)
                 clock.tick(FPS)
                 pygame.display.update()
@@ -78,17 +76,17 @@ def game_loop(game, clock):
 # Main function
 def main():
     index = 0
-    # try:
-    game = Game()
-    clock = pygame.time.Clock()
-    if not start_game(game, clock):
-        return
-    game_loop(game, clock)
-    # except Exception as ex:
-    #     print(ex)
-    #     index = index + 1
-    #     if (index > 10):
-    #         return
+    try:
+        game = Game()
+        clock = pygame.time.Clock()
+        if not start_game(game, clock):
+            return
+        game_loop(game, clock)
+    except Exception as ex:
+        print(ex)
+        index = index + 1
+        if (index > 10):
+            return
 
 
 # Begin the program
