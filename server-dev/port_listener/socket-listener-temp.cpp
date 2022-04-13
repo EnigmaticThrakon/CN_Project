@@ -42,7 +42,7 @@ void status_update()
 
     while(redisHandler->get_key(_game_started) != "1") { timer->reset(); }
     reply = get_response_string(redisHandler->get_key(_game_status));
-    send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
+    //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
     send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
     while(reply == redisHandler->get_key(_game_status)) { timer->reset(); }
 
@@ -50,9 +50,9 @@ void status_update()
     {
         if (timer->elapsed_time() > 1000)
         {
-            if (redisHandler->get_key(_right_player_connected) == "1" && redisHandler->get_key(_left_player_connected) == "1")
+            if (redisHandler->get_key(_right_player_connected) == "1")// && redisHandler->get_key(_left_player_connected) == "1")
             {
-                send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
+                //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
                 send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
 
                 reply = get_response_string(redisHandler->get_key(_game_status));
@@ -241,9 +241,9 @@ int main(int argc, char *argv[])
             {
                 if(redisHandler->get_key(_left_player_connected) != "1")
                 {              
-                    snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_left_player_response).c_str(), redisHandler->get_key(_lscore_location_x).c_str(), "000", "000", "000", "000");
-                    input_data = get_response_string(std::string(buffer));
-                    send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+                    // snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_left_player_response).c_str(), redisHandler->get_key(_lscore_location_x).c_str(), "000", "000", "000", "000");
+                    // input_data = get_response_string(std::string(buffer));
+                    // send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
 
                     redisHandler->set_key(_left_player_connected, std::to_string(1));
                 }
