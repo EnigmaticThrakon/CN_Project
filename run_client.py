@@ -7,6 +7,10 @@ from client_dev.variables import *
 
 def start_game(game, clock):
     # Initialize start button and title
+    volume = 0
+    pygame.mixer.music.load("dark_souls.mp3")
+    pygame.mixer.music.set_volume(volume)
+    pygame.mixer.music.play(-1)
     title_text = Text(75, WHITE, "\"PING\" PONG", 125, 100)
     start_text = Text(40, BLACK, "START")
     start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
@@ -16,11 +20,15 @@ def start_game(game, clock):
     waiting_text_one = Text(75, WHITE, "WAITING .", 125, 100)
     waiting_text_two = Text(75, WHITE, "WAITING . .", 125, 100)
     waiting_text_three = Text(75, WHITE, "WAITING . . .", 125, 100)
+    image = pygame.image.load(r'tran.jpg')
+
     while True:
         game.window.fill(BLACK)
         title_text.draw(game.window)
+        game.window.blit(image, (400, 500))
         # Fade title screen to black once button is clicked
         if start_button.create_button(game.window):
+            pygame.mixer.music.fadeout(1275)
             for rgb in range(255, -1, -1):
                 title_text.color = (rgb, rgb, rgb)
                 title_text.draw(game.window)
@@ -54,6 +62,10 @@ def start_game(game, clock):
                 game.client.disconnect()
                 return False
         pygame.display.update()
+        while volume < 1.0:
+            pygame.mixer.music.set_volume(volume)
+            volume += 0.01
+            time.sleep(.005)
 
 
 def game_loop(game, clock):
@@ -64,6 +76,7 @@ def game_loop(game, clock):
         # Breaks loop if player presses escape
         if game.playerMovementHandler(keys) is False:
             return
+        return
         game.client.send_msg("{:03d}".format(int(game.player.y)))
         game.set_game_info(game.parse_response(game.client.recv_msg()))
         # If the window is closed, end the program
@@ -76,17 +89,17 @@ def game_loop(game, clock):
 # Main function
 def main():
     index = 0
-    try:
-        game = Game()
-        clock = pygame.time.Clock()
-        if not start_game(game, clock):
-            return
-        game_loop(game, clock)
-    except Exception as ex:
-        print(ex)
-        index = index + 1
-        if (index > 10):
-            return
+    # try:
+    game = Game()
+    clock = pygame.time.Clock()
+    if not start_game(game, clock):
+        return
+    game_loop(game, clock)
+    # except Exception as ex:
+    #     print(ex)
+    #     index = index + 1
+    #     if (index > 10):
+    #         return
 
 
 # Begin the program
