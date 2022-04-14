@@ -7,8 +7,8 @@ int _screen_width = 1000;
 int _rscore_x = 520;
 int _lscore_x = 470;
 
-int _paddle_height = 10;
-int _paddle_width = 10;
+int _paddle_height = 100;
+int _paddle_width = 20;
 int _initial_lpaddle_x = 10;
 int _initial_lpaddle_y = _screen_height / 2;
 int _initial_rpaddle_x = 970;
