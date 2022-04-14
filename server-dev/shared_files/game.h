@@ -9,8 +9,7 @@ class game_component
 private:
     std::string _component_id;
     int _component_height, _component_width;
-    int _location_x, _previous_location_x;
-    int _location_y, _previous_location_y;
+    int _location_x, _location_y;
     int _edge_top, _edge_bottom, _edge_right, _edge_left;
     int _x_velocity, _y_velocity;
 public:
@@ -20,8 +19,8 @@ public:
         _component_id = input_id;
         _component_height = input_height;
         _component_width = input_width;
-        _location_x = _previous_location_x = _input_x;
-        _location_y = _previous_location_y = _input_y;
+        _location_x = _input_x;
+        _location_y = _input_y;
         _x_velocity = _y_velocity = 0;
 
         _edge_top = _location_y + input_height / 2;
@@ -33,24 +32,15 @@ public:
 
     int get_location_x() { return _location_x; }
     int get_location_y() { return _location_y; }
-    void set_location(int input_x, int input_y, bool ball)
+    void set_location(double input_x, double input_y, bool ball)
     {
-        _previous_location_x = _location_x;
-        _previous_location_y = _location_y;
-
         _location_x = input_x;
         _location_y = input_y;
 
-        _edge_top = _location_y + _component_height / 2;
-        _edge_bottom = _location_y - _component_height / 2;
+        _edge_top = _location_y - _component_height / 2;
+        _edge_bottom = _edge_top + _component_height;
         _edge_right = _location_x + _component_width / 2;
         _edge_left = _location_x - _component_width / 2;
-
-        if(!ball)
-        {
-            _x_velocity = _location_x - _previous_location_x;
-            _y_velocity = _location_y - _previous_location_y;
-        }
     }
 
     int get_top_edge() { return _edge_top; }
@@ -70,9 +60,9 @@ public:
     int get_height() { return _component_height; }
     int get_width() { return _component_width; }
 
-    int get_velocity_x() { return _x_velocity; }
-    int get_velocity_y() { return _y_velocity; }
-    void set_velocity(int xVel, int yVel)
+    double get_velocity_x() { return _x_velocity; }
+    double get_velocity_y() { return _y_velocity; }
+    void set_velocity(double xVel, double yVel)
     {
         _x_velocity = xVel;
         _y_velocity = yVel;
@@ -83,12 +73,12 @@ class pong_game
 {
 private:
     game_component *_ball, *_left_paddle, *_right_paddle, *_window, *_play_area;
-    int _left_score, _right_score, _win_point;
+    int _left_score, _right_score, _win_point, _ball_angle, _angle_counter;
 
     int check_ball_collision()
     {
         int returnValue = 0;
-        if(_ball->get_top_edge() >= _play_area->get_top_edge())
+        if(_ball->get_bottom_edge() >= _play_area->get_top_edge())
             calc_ball_trajectory(2);
         
         if(_ball->get_left_edge() <= _play_area->get_left_edge())
@@ -97,7 +87,7 @@ private:
         if(_ball->get_right_edge() >= _play_area->get_right_edge())
             returnValue = check_goal();
 
-        if(_ball->get_bottom_edge()<= _play_area->get_bottom_edge())
+        if(_ball->get_top_edge()<= _play_area->get_bottom_edge())
             calc_ball_trajectory(0);
 
         return returnValue;
@@ -107,14 +97,14 @@ private:
     {
         if(_ball->get_left_edge() <= _play_area->get_left_edge())
         {
-            if(_ball->get_bottom_edge() >= _left_paddle->get_top_edge() || _ball->get_top_edge() <= _left_paddle->get_bottom_edge())
+            if(_ball->get_bottom_edge() <= _left_paddle->get_top_edge() || _ball->get_top_edge() >= _left_paddle->get_bottom_edge())
                 return -1;
             
             calc_ball_trajectory(1);
         }
         else if(_ball->get_right_edge() >= _play_area->get_right_edge())
         {
-            if(_ball->get_bottom_edge() >= _right_paddle->get_top_edge() || _ball->get_top_edge() <= _right_paddle->get_bottom_edge())
+            if(_ball->get_bottom_edge() <= _right_paddle->get_top_edge() || _ball->get_top_edge() >= _right_paddle->get_bottom_edge())
                 return 1;
 
             calc_ball_trajectory(3);
@@ -128,9 +118,22 @@ private:
         if(sideCollided % 2 == 1)
         {
             game_component *paddle =  sideCollided == 1 ? _left_paddle : _right_paddle;
-            double centerOffset = paddle->get_location_y() - _ball->get_location_y();
+            int centerOffset = paddle->get_location_y() - _ball->get_location_y() - 10;
+            _ball_angle = (paddle->get_height() / 2) - abs(centerOffset) - 10;
 
-            _ball->set_velocity(-1 * _ball->get_velocity_x(), (int)centerOffset);
+            _ball_angle < 0 ? _ball_angle = abs(_ball_angle) : _ball_angle = _ball_angle;
+
+            if(_ball->get_velocity_y() > 0)
+            {
+                centerOffset < 0 ? _ball->set_velocity(-1 * _ball->get_velocity_x(), _ball->get_velocity_y()) : _ball->set_velocity(-1 * _ball->get_velocity_x(), -1 * _ball->get_velocity_y());
+            }
+            else
+            {
+                centerOffset < 0 ? _ball->set_velocity(-1 * _ball->get_velocity_x(), -1 * _ball->get_velocity_y()) : _ball->set_velocity(-1 * _ball->get_velocity_x(), _ball->get_velocity_y());
+            }
+            std::cout << centerOffset << " " << _ball->get_velocity_y();
+
+            _angle_counter = 0;
             return;
         }
 
@@ -168,8 +171,12 @@ private:
             free(_right_paddle);
         }
 
+        std::srand(std::time(NULL));
+        _ball_angle = std::rand() % 50;
+        _angle_counter = 0;
         _ball = new game_component("ball", _ball_height, _ball_width, _initial_ball_x, _initial_ball_y);
-        _ball->set_velocity(_initial_ball_velocity_x, _initial_ball_velocity_y);
+        //_ball->set_velocity(std::rand() % 2 > 0 ? _initial_ball_velocity_x : _initial_ball_velocity_x * -1, std::rand() % 2 > 0 ? _initial_ball_velocity_y : _initial_ball_velocity_y * -1);
+        _ball->set_velocity(_initial_ball_velocity_x, std::rand() % 2 > 0 ? _initial_ball_velocity_y : _initial_ball_velocity_y * -1);
 
         _left_paddle = new game_component("left_paddle", _paddle_height, _paddle_width, _initial_lpaddle_x, _initial_lpaddle_y);
         _right_paddle = new game_component("right_paddle", _paddle_height, _paddle_width, _initial_rpaddle_x, _initial_rpaddle_y);
@@ -197,7 +204,7 @@ public:
     pong_game()
     {
         _win_point = _win;
-        reset_game(2);
+        reset_game(0);
 
         _window = new game_component("window", _screen_height, _screen_width, 0, 0);
         _window->set_edges(0, _screen_height, 0, _screen_width);
@@ -216,9 +223,17 @@ public:
 
     bool update_ball_location()
     {
-        int component_x = 0, component_y = 0;
+        int yVel = 0;
         
-        _ball->set_location(_ball->get_location_x() + _ball->get_velocity_x(), _ball->get_location_y() + _ball->get_velocity_y(), true);
+        _angle_counter++;
+        if(_angle_counter >= _ball_angle)
+        {
+            yVel = 1;
+            _angle_counter = 0;
+        }
+
+
+        _ball->set_location(_ball->get_location_x() + _ball->get_velocity_x(), _ball->get_location_y() + _ball->get_velocity_y() * yVel, true);
         int goal = check_ball_collision();
 
         if(goal != 0)
@@ -226,6 +241,8 @@ public:
             update_score(goal == 1 ? true : false);
             return true;
         }
+
+        //std::cout << _ball_angle << " " << _angle_counter << std::endl;
 
         return false;
     }
@@ -235,14 +252,14 @@ public:
         if(left)
         {
            if(!paddle_wall_collision(input_y))
-                _left_paddle->set_location(_left_paddle->get_location_x(), input_y - _left_paddle->get_height() / 2, false);
+                _left_paddle->set_location(_left_paddle->get_location_x(), input_y + _left_paddle->get_height() / 2, false);
            else
                 _left_paddle->set_location(_left_paddle->get_location_x(), _play_area->get_top_edge() - _left_paddle->get_height(), false);
             return;
         }
         
         if(!paddle_wall_collision(input_y))
-            _right_paddle->set_location(_right_paddle->get_location_x(), input_y - _right_paddle->get_height() / 2, false);
+            _right_paddle->set_location(_right_paddle->get_location_x(), input_y + _right_paddle->get_height() / 2, false);
         else
             _right_paddle->set_location(_right_paddle->get_location_x(), _play_area->get_top_edge() - _right_paddle->get_height(), false);
         return;
