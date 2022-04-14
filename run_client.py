@@ -7,6 +7,10 @@ from client_dev.variables import *
 
 def start_game(game, clock):
     # Initialize start button and title
+    volume = 0
+    pygame.mixer.music.load("intro.mp3")
+    pygame.mixer.music.set_volume(volume)
+    pygame.mixer.music.play(-1)
     title_text = Text(75, WHITE, "\"PING\" PONG", 125, 100)
     start_text = Text(40, BLACK, "START")
     start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
@@ -16,11 +20,13 @@ def start_game(game, clock):
     waiting_text_one = Text(75, WHITE, "WAITING .", 125, 100)
     waiting_text_two = Text(75, WHITE, "WAITING . .", 125, 100)
     waiting_text_three = Text(75, WHITE, "WAITING . . .", 125, 100)
+
     while True:
         game.window.fill(BLACK)
         title_text.draw(game.window)
         # Fade title screen to black once button is clicked
         if start_button.create_button(game.window):
+            pygame.mixer.music.fadeout(1275)
             for rgb in range(255, -1, -1):
                 title_text.color = (rgb, rgb, rgb)
                 title_text.draw(game.window)
@@ -54,6 +60,10 @@ def start_game(game, clock):
                 game.client.disconnect()
                 return False
         pygame.display.update()
+        while volume < 1.0:
+            pygame.mixer.music.set_volume(volume)
+            volume += 0.01
+            time.sleep(.005)
 
 
 def game_loop(game, clock):
