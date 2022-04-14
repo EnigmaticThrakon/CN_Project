@@ -40,6 +40,8 @@ void status_update()
     bool connected = true, transmitting = false;
     char buff[38];
 
+    //Add code to loop the 999s for each player until they send a response
+    //  Separate the game status for each player so they can have two differing statuses sent if needed
     while(redisHandler->get_key(_game_started) != "1") { timer->reset(); }
     reply = get_response_string(redisHandler->get_key(_game_status));
     //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
@@ -48,7 +50,7 @@ void status_update()
 
     while (connected)
     {
-        if (timer->elapsed_time() > 1000)
+        if (timer->elapsed_time() > 500)
         {
             if (redisHandler->get_key(_right_player_connected) == "1")// && redisHandler->get_key(_left_player_connected) == "1")
             {
@@ -179,16 +181,16 @@ int main(int argc, char *argv[])
 
                 printf(new_connection.c_str(), "Right", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
             }
-            else if(left_player < 0)
-            {
-                left_player = new_socket;
+            // else if(left_player < 0)
+            // {
+            //     left_player = new_socket;
 
-                snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
-                input_data = get_response_string(std::string(buffer));
-                send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+            //     snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
+            //     input_data = get_response_string(std::string(buffer));
+            //     send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
 
-                printf(new_connection.c_str(), "Left", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-            }
+            //     printf(new_connection.c_str(), "Left", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+            // }
 
             new_socket = -1;
         }
