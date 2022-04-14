@@ -7,6 +7,7 @@ from client_dev.variables import *
 
 def start_game(game, clock):
     # Initialize start button and title
+    # time.sleep(10)
     volume = 0
     pygame.mixer.music.load("dark_souls.mp3")
     pygame.mixer.music.set_volume(volume)
