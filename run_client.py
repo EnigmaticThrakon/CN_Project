@@ -7,7 +7,7 @@ from client_dev.variables import *
 
 def start_game(game, clock):
     # Initialize start button and title
-    # time.sleep(10)
+    time.sleep(10)
     volume = 0
     pygame.mixer.music.load("dark_souls.mp3")
     pygame.mixer.music.set_volume(volume)
@@ -23,10 +23,15 @@ def start_game(game, clock):
     waiting_text_three = Text(75, WHITE, "WAITING . . .", 125, 100)
     image = pygame.image.load(r'tran.jpg')
 
+    x = 1
     while True:
         game.window.fill(BLACK)
         title_text.draw(game.window)
         game.window.blit(image, (400, 500))
+        image = pygame.transform.rotate(image, x)
+        if x < 180:
+            x =+1
+        time.sleep(.05)
         # Fade title screen to black once button is clicked
         if start_button.create_button(game.window):
             pygame.mixer.music.fadeout(1275)
