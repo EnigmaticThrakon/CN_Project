@@ -80,3 +80,9 @@ class Game():
             self.opponent.set_loc(server_response[1])
             self.player_score.score = server_response[4]
             self.opponent_score.score = server_response[5]
+
+    def check_exit(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.client.disconnect()
+                return
