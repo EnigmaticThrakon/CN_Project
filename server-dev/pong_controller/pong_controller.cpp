@@ -58,6 +58,9 @@ void await_players()
     snprintf(_status_buffer, sizeof(_status_buffer), responseFormat.c_str(), "999", "999", "999", "999", "999", "999");
     redisHandler->set_key(_game_status, get_response_string(_status_buffer));
 
+    globalTimer->reset();
+    while(globalTimer->elapsed_time() < 100000) { }
+
     return;
 }
 
@@ -89,16 +92,16 @@ int main()
         std::cout << "Game Started" << std::endl;
         while(game_running)
         {
-            gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
+            //gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
             gameHandler->update_paddle_location(stoi(redisHandler->get_key(_right_player_response)), false);
 
-            if(globalTimer->elapsed_time() > 100)
+            if(globalTimer->elapsed_time() > 17e6)
             {
                 globalTimer->reset();
                 if(gameHandler->update_ball_location())
                 {
                     update_game_status();
-                    while(globalTimer->elapsed_time() < 1000) { }
+                    while(globalTimer->elapsed_time() < 100000000) { }
                 }
             }
 
