@@ -22,7 +22,6 @@ void setup_game()
 
     std::cout << "Setting Up New Game Handler" << std::endl;
     gameHandler = new pong_game();
-    redisHandler->set_key(_game_setup, "1");
 }
 
 bool test_player_connection(bool right)
@@ -54,12 +53,16 @@ void await_players()
         //playersConnected = playersConnected && test_player_connection(false);
     }
 
+    redisHandler->set_key(_game_setup, "1");
+
     std::cout << "Both Players Connected" << std::endl;
     snprintf(_status_buffer, sizeof(_status_buffer), responseFormat.c_str(), "999", "999", "999", "999", "999", "999");
-    redisHandler->set_key(_game_status, get_response_string(_status_buffer));
+    redisHandler->set_key(_right_player_update, get_response_string(_status_buffer));
+    redisHandler->set_key(_left_player_update, get_response_string(_status_buffer));
 
-    globalTimer->reset();
-    while(globalTimer->elapsed_time() < 100000) { }
+    //while(redisHandler->get_key(_left_started_received) != "1" && redisHandler->get_key(_right_started_received) != "1") { }
+    while(redisHandler->get_key(_right_started_received) != "1") { }
+    std::cout << "Players Acknowledged Game Starting" << std::endl;
 
     return;
 }
@@ -71,12 +74,14 @@ void update_game_status()
 
     std::cout << _status_buffer << std::endl;
 
-    redisHandler->set_key(_game_status, get_response_string(_status_buffer));
+    redisHandler->set_key(_right_player_update, get_response_string(_status_buffer));
+    redisHandler->set_key(_left_player_update, get_response_string(_status_buffer));
 }
 
 int main()
 {
     bool program_running = true, game_running = false;
+    update_timer *timer = new update_timer();
     while(program_running)
     {
         setup_game();
@@ -89,36 +94,41 @@ int main()
         redisHandler->set_key(_game_started, "1");
 
         globalTimer->reset();
+        timer->reset();
         std::cout << "Game Started" << std::endl;
         while(game_running)
         {
-            //gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
-            gameHandler->update_paddle_location(stoi(redisHandler->get_key(_right_player_response)), false);
-
-            if(globalTimer->elapsed_time() > 17e6)
+            if(timer->elapsed_time() >= 1e4)
             {
-                globalTimer->reset();
-                if(gameHandler->update_ball_location())
+                timer->reset();
+                //gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
+                gameHandler->update_paddle_location(stoi(redisHandler->get_key(_right_player_response)), false);
+
+                if(globalTimer->elapsed_time() > 7e6)
                 {
-                    update_game_status();
-                    while(globalTimer->elapsed_time() < 100000000) { }
+                    globalTimer->reset();
+                    if(gameHandler->update_ball_location())
+                    {
+                        update_game_status();
+                        while(globalTimer->elapsed_time() < 5e9) { }
+                    }
                 }
+
+                update_game_status();
+
+                if(gameHandler->has_won() != 0)
+                {
+                    game_running = false;
+                    redisHandler->set_key(_game_started, "0");
+                }
+
+                //if(!test_player_connection(true) || !test_player_connection(false))
+                //{
+                //    game_running = false;
+                //    redisHandler->set_key(_game_started, "0");
+                //    break;
+                //}
             }
-
-            update_game_status();
-
-            if(gameHandler->has_won() != 0)
-            {
-                game_running = false;
-                redisHandler->set_key(_game_started, "0");
-            }
-
-            //if(!test_player_connection(true) || !test_player_connection(false))
-            //{
-            //    game_running = false;
-            //    redisHandler->set_key(_game_started, "0");
-            //    break;
-            //}
         }
         break;
 
