@@ -5,7 +5,7 @@ from client_dev.objects.button import Button
 from client_dev.game import Game
 from client_dev.variables import *
 
-def start_game(game, clock):
+def start_game(game):
     # Initialize start button and title
     volume = 0
     pygame.mixer.music.load("intro.mp3")
@@ -31,7 +31,6 @@ def start_game(game, clock):
                 title_text.color = (rgb, rgb, rgb)
                 title_text.draw(game.window)
                 start_button.draw(game.window, (rgb, rgb, rgb))
-                clock.tick(FPS)
                 pygame.display.update()
                 time.sleep(.005)
             game.initialize_client()
@@ -39,7 +38,6 @@ def start_game(game, clock):
             while response != 999:
                 response = game.parse_response(game.client.recv_msg())[0]
                 game.window.fill(BLACK)
-                clock.tick(FPS)
                 pygame.display.update()
                 if waiting_count == 0:
                     waiting_text_zero.draw(game.window)
@@ -53,6 +51,7 @@ def start_game(game, clock):
                 pygame.display.update()
                 waiting_count += 1
                 time.sleep(.5)
+            game.client.send_msg("999")
             return True
         # If the window is closed, end the program
         for event in pygame.event.get():
@@ -66,9 +65,8 @@ def start_game(game, clock):
             time.sleep(.005)
 
 
-def game_loop(game, clock):
+def game_loop(game):
     while True:
-        clock.tick(FPS)
         game.draw([game.player, game.opponent, game.player_score, game.opponent_score, game.ball])
         keys = pygame.key.get_pressed()
         # Breaks loop if player presses escape
@@ -88,10 +86,9 @@ def main():
     index = 0
     try:
         game = Game()
-        clock = pygame.time.Clock()
-        if not start_game(game, clock):
+        if not start_game(game):
             return
-        game_loop(game, clock)
+        game_loop(game)
     except Exception as ex:
         print(ex)
         index = index + 1
