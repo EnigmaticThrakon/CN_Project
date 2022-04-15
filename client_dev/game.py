@@ -74,9 +74,17 @@ class Game():
         # Set opponent paddle position and scores
         if self.player_right:
             self.opponent.set_loc(server_response[0])
-            self.player_score.score = server_response[5]
-            self.opponent_score.score = server_response[4]
+            self.player_score.set_score(server_response[5])
+            self.opponent_score.set_score(server_response[4])
+
         else:
             self.opponent.set_loc(server_response[1])
-            self.player_score.score = server_response[4]
-            self.opponent_score.score = server_response[5]
+            self.player_score.set_score(server_response[4])
+            self.opponent_score.set_score(server_response[5])
+
+
+    def check_exit(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.client.disconnect()
+                return
