@@ -40,29 +40,36 @@ void status_update()
     bool connected = true, transmitting = false;
     char buff[38];
 
-    //Add code to loop the 999s for each player until they send a response
-    //  Separate the game status for each player so they can have two differing statuses sent if needed
-    while(redisHandler->get_key(_game_started) != "1") { timer->reset(); }
-    reply = get_response_string(redisHandler->get_key(_game_status));
-    //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
-    send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
-    while(reply == redisHandler->get_key(_game_status)) { timer->reset(); }
+    while(redisHandler->get_key(_game_setup) != "1") { }
+
+    while(redisHandler->get_key(_game_started) != "1") 
+    {
+        reply = get_response_string(redisHandler->get_key(_right_player_update));
+        send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
+        //reply = get_reponse_string(redisHandler->get_key(_left_player_update));
+        //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
+    }
+    //while(reply == redisHandler->get_key(_game_status)) { timer->reset(); }
 
     while (connected)
     {
         if (timer->elapsed_time() > 500)
         {
-            if (redisHandler->get_key(_right_player_connected) == "1")// && redisHandler->get_key(_left_player_connected) == "1")
+            if(redisHandler->get_key(_right_player_connected) == "1")
             {
-                //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
+                reply = get_response_string(redisHandler->get_key(_right_player_update));
                 send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
+            }
 
-                reply = get_response_string(redisHandler->get_key(_game_status));
-            }
-            else
+            if(redisHandler->get_key(_left_player_connected) == "1")
             {
-                connected = false;
+                reply = get_response_string(redisHandler->get_key(_left_player_update));
+                send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
             }
+
+            if(redisHandler->get_key(_right_player_connected) == "0" && redisHandler->get_key(_left_player_connected) == "0")
+                connected = false;
+
             timer->reset();
         }
     }
@@ -212,14 +219,10 @@ int main(int argc, char *argv[])
             }
             else 
             {
-                if(redisHandler->get_key(_right_player_connected) != "1")
-                {              
-                    // snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_right_player_response).c_str(), redisHandler->get_key(_rscore_location_x).c_str(), "000", "000", "000", "000");
-                    // input_data = get_response_string(std::string(buffer));
-                    // send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
-
-                    redisHandler->set_key(_right_player_connected, std::to_string(1));
-                }
+                if(redisHandler->get_key(_right_player_connected) != "1")          
+                    redisHandler->set_key(_right_player_connected, "1");
+                else if(input_data == "999")
+                    redisHandler->set_key(_right_started_received, "1");
 
                 redisHandler->set_key(_right_player_response, input_data);
             }
@@ -241,14 +244,10 @@ int main(int argc, char *argv[])
             }
             else 
             {
-                if(redisHandler->get_key(_left_player_connected) != "1")
-                {              
-                    // snprintf(buffer, sizeof(buffer), responseFormat.c_str(), redisHandler->get_key(_left_player_response).c_str(), redisHandler->get_key(_lscore_location_x).c_str(), "000", "000", "000", "000");
-                    // input_data = get_response_string(std::string(buffer));
-                    // send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
-
-                    redisHandler->set_key(_left_player_connected, std::to_string(1));
-                }
+                if(redisHandler->get_key(_left_player_connected) != "1")         
+                    redisHandler->set_key(_left_player_connected, "1");
+                else if(input_data == "999")
+                    redisHandler->set_key(_left_started_received, "1");
 
                 redisHandler->set_key(_left_player_response, input_data);
             }
