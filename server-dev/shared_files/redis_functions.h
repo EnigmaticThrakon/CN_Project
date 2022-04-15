@@ -45,8 +45,21 @@ public:
 
         set_key(_left_player_response, std::to_string(_initial_lpaddle_y));
         set_key(_right_player_response, std::to_string(_initial_rpaddle_y));
-        set_key(_rscore_location_x, std::to_string(_rscore_x));
-        set_key(_lscore_location_x, std::to_string(_lscore_x));
+
+        set_key(_left_player_connected, "0");
+        set_key(_right_player_connected, "0");
+
+        set_key(_game_setup, "0");
+        set_key(_game_started, "0");
+
+        set_key(_left_player_update, "0");
+        set_key(_right_player_update, "0");
+
+        set_key(_left_started_received, "0");
+        set_key(_right_started_received, "0");
+
+        set_key(_status_update_sent, "0");
+        set_key(_status_update_ready, "0");
     }
 
     void set_key(std::string key, std::string value)
