@@ -54,10 +54,8 @@ def start_game(game):
             game.client.send_msg("999")
             return True
         # If the window is closed, end the program
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game.client.disconnect()
-                return False
+        if game.check_exit():
+            return
         pygame.display.update()
         while volume < 1.0:
             pygame.mixer.music.set_volume(volume)
@@ -75,25 +73,22 @@ def game_loop(game):
         game.client.send_msg("{:03d}".format(int(game.player.y)))
         game.set_game_info(game.parse_response(game.client.recv_msg()))
         # If the window is closed, end the program
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game.client.disconnect()
-                return
+        if game.check_exit():
+            return
 
 
 # Main function
 def main():
     index = 0
-    try:
-        game = Game()
-        if not start_game(game):
-            return
-        game_loop(game)
-    except Exception as ex:
-        print(ex)
-        index = index + 1
-        if (index > 10):
-            return
+    # try:
+    game = Game()
+    start_game(game)
+    game_loop(game)
+    # except Exception as ex:
+    #     print(ex)
+    #     index = index + 1
+    #     if (index > 10):
+    #         return
 
 
 # Begin the program
