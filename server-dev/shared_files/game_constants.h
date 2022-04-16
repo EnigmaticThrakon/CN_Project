@@ -9,7 +9,7 @@ int _lscore_x = 470;
 
 int _paddle_height = 100;
 int _paddle_width = 20;
-int _initial_lpaddle_x = 10;
+int _initial_lpaddle_x = 20;
 int _initial_lpaddle_y = _screen_height / 2;
 int _initial_rpaddle_x = 970;
 int _initial_rpaddle_y = _screen_height / 2;

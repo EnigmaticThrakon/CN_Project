@@ -23,8 +23,8 @@ public:
         _location_y = _input_y;
         _x_velocity = _y_velocity = 0;
 
-        _edge_top = _location_y + input_height / 2;
-        _edge_bottom = _location_y - input_height / 2;
+        _edge_top = _location_y - input_height / 2;
+        _edge_bottom = _location_y + input_height;
         _edge_left = _location_x - input_width / 2;
         _edge_right = _location_x + input_width / 2;
     }
