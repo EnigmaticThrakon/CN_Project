@@ -50,7 +50,7 @@ void await_players()
     while(!playersConnected)
     {
         playersConnected = test_player_connection(true);
-        //playersConnected = playersConnected && test_player_connection(false);
+        playersConnected = playersConnected && test_player_connection(false);
     }
 
     redisHandler->set_key(_game_setup, "1");
@@ -60,8 +60,8 @@ void await_players()
     redisHandler->set_key(_right_player_update, get_response_string(_status_buffer));
     redisHandler->set_key(_left_player_update, get_response_string(_status_buffer));
 
-    //while(redisHandler->get_key(_left_started_received) != "1" && redisHandler->get_key(_right_started_received) != "1") { }
-    while(redisHandler->get_key(_right_started_received) != "1") { }
+    while(redisHandler->get_key(_left_started_received) != "1" && redisHandler->get_key(_right_started_received) != "1") { }
+    // while(redisHandler->get_key(_right_started_received) != "1") { }
     std::cout << "Players Acknowledged Game Starting" << std::endl;
 
     return;
@@ -89,8 +89,8 @@ int main()
 
         std::cout << "Game Setup Complete" << std::endl;
         game_running = true;
-        redisHandler->set_key(_left_player_response, std::to_string(_initial_lpaddle_y));
-        redisHandler->set_key(_right_player_response, std::to_string(_initial_rpaddle_y));
+        redisHandler->set_key(_left_player_response, std::to_string(_initial_paddle_y));
+        redisHandler->set_key(_right_player_response, std::to_string(_initial_paddle_y));
         redisHandler->set_key(_game_started, "1");
 
         globalTimer->reset();
@@ -103,16 +103,20 @@ int main()
             while(redisHandler->get_key(_status_update_sent) != "1") { }
 
             redisHandler->set_key(_status_update_sent, "0");
-            // gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
 
             for(int i = 0; i < 4; i++)
             {
                 redisData = redisHandler->get_key(_right_player_response);
                 if(redisData != "")
-                    gameHandler->update_paddle_location(stoi(redisHandler->get_key(_right_player_response)), false);
+                    gameHandler->update_paddle_location(stoi(redisData), false);
+
+                redisData = redisHandler->get_key(_left_player_response);
+                if(redisData != "")
+                    gameHandler->update_paddle_location(stoi(redisData), true);
 
                 if(gameHandler->update_ball_location())
                 {
+                    std::cout << "Score Made: Resetting Ball Position" << std::endl;
                     globalTimer->reset();
                     update_game_status();
                     while(globalTimer->elapsed_time() < 5e9) { }
@@ -126,11 +130,21 @@ int main()
 
             if (gameHandler->has_won() != 0)
             {
+                std::cout << "Game Completed: Beginning Setup for New Game" << std::endl;
                 game_running = false;
                 redisHandler->set_key(_game_started, "0");
             }
+
+            if(redisHandler->get_key(_right_player_connected) == "0" || redisHandler->get_key(_left_player_connected) == "0")
+            {
+                std::cout << "Player Disconnected: Game Terminating and Beginning Setup for New Game" << std::endl;
+                game_running = false;
+                redisHandler->set_key(_game_started, "0");
+            }
+
+            redisHandler->set_key(_game_setup, "0");
+            redisHandler->set_key(_game_started, "0");
         }
-        break;
 
     }
     return 0;
