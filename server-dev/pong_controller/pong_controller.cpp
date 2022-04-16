@@ -96,38 +96,38 @@ int main()
         globalTimer->reset();
         timer->reset();
         std::cout << "Game Started" << std::endl;
+
+        std::string redisData = "";
         while(game_running)
         {
-            if(timer->elapsed_time() >= 1e4)
-            {
-                timer->reset();
-                //gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
-                gameHandler->update_paddle_location(stoi(redisHandler->get_key(_right_player_response)), false);
+            while(redisHandler->get_key(_status_update_sent) != "1") { }
 
-                if(globalTimer->elapsed_time() > 7e6)
+            redisHandler->set_key(_status_update_sent, "0");
+            // gameHandler->update_paddle_location(stoi(redisHandler->get_key(_left_player_response)), true);
+
+            for(int i = 0; i < 4; i++)
+            {
+                redisData = redisHandler->get_key(_right_player_response);
+                if(redisData != "")
+                    gameHandler->update_paddle_location(stoi(redisHandler->get_key(_right_player_response)), false);
+
+                if(gameHandler->update_ball_location())
                 {
                     globalTimer->reset();
-                    if(gameHandler->update_ball_location())
-                    {
-                        update_game_status();
-                        while(globalTimer->elapsed_time() < 5e9) { }
-                    }
+                    update_game_status();
+                    while(globalTimer->elapsed_time() < 5e9) { }
+                    break;
                 }
-
-                update_game_status();
-
-                if(gameHandler->has_won() != 0)
+                else
                 {
-                    game_running = false;
-                    redisHandler->set_key(_game_started, "0");
+                    update_game_status();
                 }
+            }
 
-                //if(!test_player_connection(true) || !test_player_connection(false))
-                //{
-                //    game_running = false;
-                //    redisHandler->set_key(_game_started, "0");
-                //    break;
-                //}
+            if (gameHandler->has_won() != 0)
+            {
+                game_running = false;
+                redisHandler->set_key(_game_started, "0");
             }
         }
         break;
