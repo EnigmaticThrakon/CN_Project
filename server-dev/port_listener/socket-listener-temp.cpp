@@ -53,7 +53,7 @@ void status_update()
 
     while (connected)
     {
-        if (timer->elapsed_time() > 500)
+        if (timer->elapsed_time() > 10)
         {
             if(redisHandler->get_key(_right_player_connected) == "1")
             {
@@ -66,6 +66,8 @@ void status_update()
                 reply = get_response_string(redisHandler->get_key(_left_player_update));
                 send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
             }
+
+            redisHandler->set_key(_status_update_sent, "1");
 
             if(redisHandler->get_key(_right_player_connected) == "0" && redisHandler->get_key(_left_player_connected) == "0")
                 connected = false;
