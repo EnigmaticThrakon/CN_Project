@@ -74,11 +74,12 @@ class pong_game
 private:
     game_component *_ball, *_left_paddle, *_right_paddle, *_window, *_play_area;
     int _left_score, _right_score, _win_point, _ball_angle, _angle_counter;
+    bool _wall_collision;
 
     int check_ball_collision()
     {
         int returnValue = 0;
-        if(_ball->get_bottom_edge() >= _play_area->get_top_edge())
+        if(_ball->get_bottom_edge() >= _play_area->get_top_edge() && !_wall_collision)
             calc_ball_trajectory(2);
         
         if(_ball->get_left_edge() <= _play_area->get_left_edge())
@@ -87,7 +88,7 @@ private:
         if(_ball->get_right_edge() >= _play_area->get_right_edge())
             returnValue = check_goal();
 
-        if(_ball->get_top_edge()<= _play_area->get_bottom_edge())
+        if(_ball->get_top_edge() <= _play_area->get_bottom_edge() && !_wall_collision)
             calc_ball_trajectory(0);
 
         return returnValue;
@@ -137,7 +138,9 @@ private:
             return;
         }
 
+        _wall_collision = true;
         _ball->set_velocity(_ball->get_velocity_x(), -1 * _ball->get_velocity_y());
+        _ball->set_location(_ball->get_location_x() + _ball->get_velocity_x(), _ball->get_location_y() + _ball->get_velocity_y(), true);
         return;
     }
 
@@ -178,9 +181,11 @@ private:
         //_ball->set_velocity(std::rand() % 2 > 0 ? _initial_ball_velocity_x : _initial_ball_velocity_x * -1, std::rand() % 2 > 0 ? _initial_ball_velocity_y : _initial_ball_velocity_y * -1);
         _ball->set_velocity(_initial_ball_velocity_x, std::rand() % 2 > 0 ? _initial_ball_velocity_y : _initial_ball_velocity_y * -1);
 
-        _left_paddle = new game_component("left_paddle", _paddle_height, _paddle_width, _initial_lpaddle_x, _initial_lpaddle_y);
-        _right_paddle = new game_component("right_paddle", _paddle_height, _paddle_width, _initial_rpaddle_x, _initial_rpaddle_y);
+        _left_paddle = new game_component("left_paddle", _paddle_height, _paddle_width, _initial_lpaddle_x, _initial_paddle_y);
+        _right_paddle = new game_component("right_paddle", _paddle_height, _paddle_width, _initial_rpaddle_x, _initial_paddle_y);
 
+
+        _wall_collision = false;
         if(indicator % 2 == 0)
             _right_score = _left_score = 0;
     }
@@ -230,6 +235,7 @@ public:
         {
             yVel = 1;
             _angle_counter = 0;
+            _wall_collision = false;
         }
 
 
