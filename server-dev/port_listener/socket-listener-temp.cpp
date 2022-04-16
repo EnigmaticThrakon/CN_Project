@@ -33,6 +33,24 @@ std::string get_response_string(std::string formattedString)
     return formattedString;
 }
 
+void await_game_setup()
+{
+    while(redisHandler->get_key(_game_setup) != "1") { }
+    return;
+}
+
+void notify_game_starting()
+{
+    std::string data = "";
+    while(redisHandler->get_key(_game_started) != "1") 
+    {
+        data = get_response_string(redisHandler->get_key(_right_player_update));
+        send(right_player, data.c_str(), strlen(data.c_str()), 0);
+        data = get_response_string(redisHandler->get_key(_left_player_update));
+        send(left_player, data.c_str(), strlen(data.c_str()), 0);
+    }
+}
+
 void status_update()
 {
     update_timer *timer = new update_timer();
@@ -46,14 +64,16 @@ void status_update()
     {
         reply = get_response_string(redisHandler->get_key(_right_player_update));
         send(right_player, reply.c_str(), strlen(reply.c_str()), 0);
-        //reply = get_reponse_string(redisHandler->get_key(_left_player_update));
-        //send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
+        reply = get_response_string(redisHandler->get_key(_left_player_update));
+        send(left_player, reply.c_str(), strlen(reply.c_str()), 0);
     }
     //while(reply == redisHandler->get_key(_game_status)) { timer->reset(); }
 
+    timer->reset();
     while (connected)
     {
-        if (timer->elapsed_time() > 10)
+        // if (timer->elapsed_time() > 1250000)
+        if(timer->elapsed_time() > 880000)
         {
             if(redisHandler->get_key(_right_player_connected) == "1")
             {
@@ -190,16 +210,16 @@ int main(int argc, char *argv[])
 
                 printf(new_connection.c_str(), "Right", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
             }
-            // else if(left_player < 0)
-            // {
-            //     left_player = new_socket;
+            else if(left_player < 0)
+            {
+                left_player = new_socket;
 
-            //     snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
-            //     input_data = get_response_string(std::string(buffer));
-            //     send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
+                snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
+                input_data = get_response_string(std::string(buffer));
+                send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
 
-            //     printf(new_connection.c_str(), "Left", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-            // }
+                printf(new_connection.c_str(), "Left", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
+            }
 
             new_socket = -1;
         }
@@ -211,7 +231,8 @@ int main(int argc, char *argv[])
 
             if(input_data == "~~~")
             {
-                redisHandler->set_key(_right_player_connected, std::to_string(0));
+                redisHandler->set_key(_right_player_connected, "0");
+                redisHandler->set_key(_right_started_received, "0");
 
                     getpeername(right_player, (struct sockaddr *)&address, (socklen_t *)&addrlen);
                     printf(closed_connection.c_str(), "Right", right_player, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
@@ -236,7 +257,8 @@ int main(int argc, char *argv[])
 
             if(input_data == "~~~")
             {
-                redisHandler->set_key(_left_player_connected, std::to_string(0));
+                redisHandler->set_key(_left_player_connected, "0");
+                redisHandler->set_key(_left_started_received, "0");
 
                 getpeername(left_player, (struct sockaddr *)&address, (socklen_t *)&addrlen);
                 printf(closed_connection.c_str(), "Left", left_player, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
