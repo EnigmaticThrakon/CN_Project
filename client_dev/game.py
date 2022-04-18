@@ -69,6 +69,8 @@ class Game():
                 int(server_response[2].split(",")[1][0:-1])]
 
     def set_game_info(self, server_response):
+        if server_response[0] == 999:
+            return
         # Set ball position
         self.ball.set_loc(server_response[2], server_response[3])
         # Set opponent paddle position and scores
@@ -76,7 +78,6 @@ class Game():
             self.opponent.set_loc(server_response[0])
             self.player_score.set_score(server_response[5])
             self.opponent_score.set_score(server_response[4])
-
         else:
             self.opponent.set_loc(server_response[1])
             self.player_score.set_score(server_response[4])

@@ -11,7 +11,7 @@ def start_game(game):
     pygame.mixer.music.load("intro.mp3")
     pygame.mixer.music.set_volume(volume)
     pygame.mixer.music.play(-1)
-    title_text = Text(75, WHITE, "\"PING\" PONG", 125, 100)
+    title_text = Text(75, WHITE, "''PING'' PONG", 100, 100)
     start_text = Text(40, BLACK, "START")
     start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
     # Initialize waiting texts
@@ -33,8 +33,10 @@ def start_game(game):
                 start_button.draw(game.window, (rgb, rgb, rgb))
                 pygame.display.update()
                 time.sleep(.005)
+            game.window.fill(BLACK)
+            pygame.display.update()
             game.initialize_client()
-            response = ""
+            response = 0
             while response != 999:
                 response = game.parse_response(game.client.recv_msg())[0]
                 game.window.fill(BLACK)
