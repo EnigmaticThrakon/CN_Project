@@ -3,7 +3,10 @@ from client_dev.objects.ball import Ball
 from client_dev.objects.paddle import Paddle
 from client_dev.objects.score import Score
 from client_dev.client import Client
+from client_dev.objects.text import Text
+from client_dev.objects.button import Button
 from client_dev.variables import *
+import time
 
 
 class Game():
@@ -21,6 +24,47 @@ class Game():
         self.ball = Ball()
         # Initialize other variables
         self.prev_server_response = None
+
+    def check_exit(self):
+        # If the player clicks escape quit the game
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE]:
+            pygame.quit()
+        # Returns true if player quits the game
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                return True
+
+    def draw(self, objects):
+        # Draw all game objects onto the screen
+        self.window.fill(BLACK)
+        for object in objects:
+            object.draw(self.window)
+        pygame.display.update()
+
+    def end(self):
+        # Decided who the winner is and initialize text and button objects
+        if self.winner:
+            winner_text = Text(75, WHITE, "WINNER", 300, 100)
+        else:
+            winner_text = Text(75, WHITE, "LOSER", 300, 100)
+        seconds_left = 10
+        seconds_left_text = Text(75, WHITE, f"{seconds_left}", 450, 500)
+        start = time.perf_counter()
+        while seconds_left > 0:
+            # Clear the window
+            self.window.fill(BLACK)
+            # If the window is closed, end the program
+            if self.check_exit():
+                return True
+            if time.perf_counter() - start > 1:
+                seconds_left -= 1
+                seconds_left_text = Text(75, WHITE, f"{seconds_left}", 475, 500)
+                start = time.perf_counter()
+            winner_text.draw(self.window)
+            seconds_left_text.draw(self.window)
+            pygame.display.update()
+        return True
 
     def initialize_client(self):
         # Initialize client and set player x positions
@@ -40,18 +84,21 @@ class Game():
         # Respond to player once initial positions are set
         self.client.send_msg("debug")
 
-    def draw(self, objects):
-        # Draw all game objects onto the screen
-        self.window.fill(BLACK)
-        for object in objects:
-            object.draw(self.window)
-        pygame.display.update()
-
-    def playerMovementHandler(self, keys):
-        if keys[pygame.K_UP] and self.player.y - self.player.speed >= 0:
-            return self.player.move(up=True)
-        if keys[pygame.K_DOWN] and self.player.y + self.player.speed + self.player.height <= SCREEN_HEIGHT:
-            return self.player.move(up=False)
+    def loop(self):
+        while True:
+            # If the window is closed, end the program
+            if self.check_exit():
+                return True
+            self.draw([self.player, self.opponent, self.player_score, self.opponent_score, self.ball])
+            self.playerMovementHandler(pygame.key.get_pressed())
+            self.client.send_msg("{:03d}".format(int(self.player.y)))
+            self.set_info(self.parse_response(self.client.recv_msg()))
+            # Check for winner
+            if self.player_score.score == 5 or self.opponent_score.score == 5:
+                self.draw([self.player, self.opponent, self.player_score, self.opponent_score, self.ball])
+                if self.player_score.score == 5:
+                    self.winner = True
+                return
 
     def parse_response(self, server_response=None):
         # Gets response from server, parse, and return
@@ -66,7 +113,13 @@ class Game():
                     int(server_response[2].split(",")[0]),
                     int(server_response[2].split(",")[1][0:-1])]
 
-    def set_game_info(self, server_response):
+    def playerMovementHandler(self, keys):
+        if keys[pygame.K_UP] and self.player.y - self.player.speed >= 0:
+            return self.player.move(up=True)
+        if keys[pygame.K_DOWN] and self.player.y + self.player.speed + self.player.height <= SCREEN_HEIGHT:
+            return self.player.move(up=False)
+
+    def set_info(self, server_response):
         if server_response[0] == 999:
             return
         # Set ball position
@@ -81,13 +134,73 @@ class Game():
             self.player_score.set_score(server_response[4])
             self.opponent_score.set_score(server_response[5])
 
+    def start(self):
+        # Initialize start button, title, and background music
+        pygame.mixer.music.load("intro.mp3")
+        pygame.mixer.music.set_volume(1)
+        pygame.mixer.music.play(-1)
+        title_text = Text(75, WHITE, "''PING'' PONG", 100, 100)
+        start_text = Text(40, BLACK, "START")
+        start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
+        self.window.fill(BLACK)
 
-    def check_exit(self):
-        # If the player clicks escape quit the game
-        keys = pygame.key.get_pressed()
-        if keys[pygame.K_ESCAPE]:
-            pygame.quit()
-        # Returns true if player quits the game
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        # While both players are not connected
+        while True:
+            # If the window is closed, end the program
+            if self.check_exit():
                 return True
+            # Draw the title screen
+            title_text.draw(self.window)
+            pygame.display.update()
+            # Fade title screen to black once button is clicked
+            if start_button.create_button(self.window):
+                # Fade title to black and background music upon starting the game
+                pygame.mixer.music.fadeout(1275)
+                for rgb in range(255, -1, -1):
+                    title_text.color = (rgb, rgb, rgb)
+                    title_text.draw(self.window)
+                    start_button.draw(self.window, (rgb, rgb, rgb))
+                    pygame.display.update()
+                    time.sleep(.005)
+                # Initialize client and wait for opponent
+                return self.wait_for_opponent()
+
+    def wait_for_opponent(self):
+        # Initialize waiting texts
+        waiting_count = 0
+        waiting_text_zero = Text(75, WHITE, "WAITING", 125, 100)
+        waiting_text_one = Text(75, WHITE, "WAITING .", 125, 100)
+        waiting_text_two = Text(75, WHITE, "WAITING . .", 125, 100)
+        waiting_text_three = Text(75, WHITE, "WAITING . . .", 125, 100)
+        # Clear the window
+        self.window.fill(BLACK)
+        pygame.display.update()
+        # Initialize the client
+        self.initialize_client()
+        response = None
+        self.client.set_blocking(0)
+        while response != 999:
+            # If the window is closed, end the program
+            if self.check_exit():
+                return True
+            # Check server for response
+            response = self.parse_response(self.client.recv_msg())[0]
+            # Clear the window
+            self.window.fill(BLACK)
+            # Draw waiting text to screen
+            if waiting_count == 0:
+                waiting_text_zero.draw(self.window)
+            elif waiting_count == 1:
+                waiting_text_one.draw(self.window)
+            elif waiting_count == 2:
+                waiting_text_two.draw(self.window)
+            elif waiting_count == 3:
+                waiting_text_three.draw(self.window)
+                waiting_count = -1
+            waiting_count += 1
+            pygame.display.update()
+            time.sleep(.5)
+        self.client.set_blocking(1)
+        # Send connection acknowledgement
+        self.client.send_msg("999")
+        return False

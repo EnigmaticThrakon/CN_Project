@@ -17,16 +17,8 @@ class Client():
         # Receive player screen side. Format = <000,000:000,000:000:000> (left) or <111,111:111,111:111:111> (right)
         self.player_screen_side = self.recv_msg()
 
-    def set_blocking(self, blocking_enum):
-        # Allows change of blocking
-        self.client.setblocking(blocking_enum)
-
-    def send_msg(self, msg):
-        try:
-            # Send a message (string format) to the server
-            self.client.send(msg.encode(self.format))
-        except Exception as ex:
-            print(ex)
+    def disconnect(self):
+        self.send_msg("~~~")
 
     def recv_msg(self):
         try:
@@ -41,5 +33,13 @@ class Client():
         except Exception as ex:
             print(ex)
 
-    def disconnect(self):
-        self.send_msg("~~~")
+    def send_msg(self, msg):
+        try:
+            # Send a message (string format) to the server
+            self.client.send(msg.encode(self.format))
+        except Exception as ex:
+            print(ex)
+
+    def set_blocking(self, blocking_enum):
+        # Allows change of blocking
+        self.client.setblocking(blocking_enum)
