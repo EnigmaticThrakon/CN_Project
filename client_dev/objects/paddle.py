@@ -3,13 +3,13 @@ from client_dev.variables import *
 
 
 class Paddle():
-    def __init__(self):
+    def __init__(self, x):
         self.width = PADDLE_WIDTH
         self.height = PADDLE_HEIGHT
         self.speed = PADDLE_SPEED
         self.color = WHITE
         self.y = PADDLE_STARTING_Y
-        self.x = 0
+        self.x = x
 
     # Draw paddle on screen
     def draw(self, window):

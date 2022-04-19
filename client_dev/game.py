@@ -17,8 +17,8 @@ class Game():
         pygame.display.set_caption("\"Ping\" Pong")
         # Define game objects and initialize
         self.winner = False
-        self.player = Paddle()
-        self.opponent = Paddle()
+        self.player = Paddle(PADDLE_STARTING_RIGHT_X)
+        self.opponent = Paddle(PADDLE_STARTING_LEFT_X)
         self.player_score = Score()
         self.opponent_score = Score()
         self.ball = Ball()
@@ -37,7 +37,6 @@ class Game():
 
     def draw(self, objects):
         # Draw all game objects onto the screen
-        self.window.fill(BLACK)
         for object in objects:
             object.draw(self.window)
         pygame.display.update()
@@ -61,10 +60,17 @@ class Game():
                 seconds_left -= 1
                 seconds_left_text = Text(75, WHITE, f"{seconds_left}", 475, 500)
                 start = time.perf_counter()
-            winner_text.draw(self.window)
-            seconds_left_text.draw(self.window)
+            self.draw([winner_text, seconds_left_text])
             pygame.display.update()
         return True
+
+    def fade_out(self, objects):
+        for rgb in range(255, -1, -1):
+            for object in objects:
+                object.color = (rgb, rgb, rgb)
+            self.draw(objects)
+            pygame.display.update()
+            time.sleep(.005)
 
     def initialize_client(self):
         # Initialize client and set player x positions
@@ -89,6 +95,8 @@ class Game():
             # If the window is closed, end the program
             if self.check_exit():
                 return True
+            # Clear the window
+            self.window.fill(BLACK)
             self.draw([self.player, self.opponent, self.player_score, self.opponent_score, self.ball])
             self.playerMovementHandler(pygame.key.get_pressed())
             self.client.send_msg("{:03d}".format(int(self.player.y)))
@@ -143,25 +151,19 @@ class Game():
         start_text = Text(40, BLACK, "START")
         start_button = Button(400, 350, 200, 50, LIGHT_GREY, WHITE, start_text)
         self.window.fill(BLACK)
-
         # While both players are not connected
         while True:
             # If the window is closed, end the program
             if self.check_exit():
                 return True
-            # Draw the title screen
-            title_text.draw(self.window)
+            # Draw the screen
+            self.draw([title_text, self.player, self.opponent])
             pygame.display.update()
             # Fade title screen to black once button is clicked
             if start_button.create_button(self.window):
                 # Fade title to black and background music upon starting the game
                 pygame.mixer.music.fadeout(1275)
-                for rgb in range(255, -1, -1):
-                    title_text.color = (rgb, rgb, rgb)
-                    title_text.draw(self.window)
-                    start_button.draw(self.window, (rgb, rgb, rgb))
-                    pygame.display.update()
-                    time.sleep(.005)
+                self.fade_out([title_text, start_button])
                 # Initialize client and wait for opponent
                 return self.wait_for_opponent()
 
@@ -172,9 +174,8 @@ class Game():
         waiting_text_one = Text(75, WHITE, "WAITING .", 125, 100)
         waiting_text_two = Text(75, WHITE, "WAITING . .", 125, 100)
         waiting_text_three = Text(75, WHITE, "WAITING . . .", 125, 100)
-        # Clear the window
-        self.window.fill(BLACK)
-        pygame.display.update()
+        left_paddle = Paddle(x=PADDLE_STARTING_LEFT_X)
+        right_paddle = Paddle(x=PADDLE_STARTING_RIGHT_X)
         # Initialize the client
         self.initialize_client()
         response = None
@@ -183,23 +184,27 @@ class Game():
             # If the window is closed, end the program
             if self.check_exit():
                 return True
+            # Clear the window
+            self.window.fill(BLACK)
             # Check server for response
             response = self.parse_response(self.client.recv_msg())[0]
             # Clear the window
-            self.window.fill(BLACK)
             # Draw waiting text to screen
             if waiting_count == 0:
-                waiting_text_zero.draw(self.window)
+                waiting_text = waiting_text_zero
             elif waiting_count == 1:
-                waiting_text_one.draw(self.window)
+                waiting_text = waiting_text_one
             elif waiting_count == 2:
-                waiting_text_two.draw(self.window)
+                waiting_text = waiting_text_two
             elif waiting_count == 3:
-                waiting_text_three.draw(self.window)
+                waiting_text = waiting_text_three
                 waiting_count = -1
+            # Draw the screen
+            self.draw([waiting_text, self.player, self.opponent])
             waiting_count += 1
             pygame.display.update()
             time.sleep(.5)
+        self.fade_out([waiting_text])
         self.client.set_blocking(1)
         # Send connection acknowledgement
         self.client.send_msg("999")
