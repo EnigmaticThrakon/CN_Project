@@ -10,7 +10,7 @@ class Text:
         self.message = message
         self.font = pygame.font.Font(SLKSCREB, self.size)
 
-
+    # Draws text on screen
     def draw(self, window):
         render = self.font.render(self.message, True, self.color)
         window.blit(render, (self.x, self.y))

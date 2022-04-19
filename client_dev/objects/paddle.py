@@ -11,14 +11,17 @@ class Paddle():
         self.y = PADDLE_STARTING_Y
         self.x = 0
 
+    # Draw paddle on screen
     def draw(self, window):
         pygame.draw.rect(window, self.color, (self.x, self.y, self.width, self.height))
 
+    # Move player paddle up or down
     def move(self, up=True):
         if up:
             self.y -= self.speed
         else:
             self.y += self.speed
 
+    # Sets y location of paddle
     def set_loc(self, y):
         self.y = y
