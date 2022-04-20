@@ -81,6 +81,8 @@ public:
 
         set_key(_status_update_sent, "0");
         set_key(_status_update_ready, "0");
+
+        set_key(_game_program_running, "0");
     }
 
     void set_key(std::string key, std::string value)
