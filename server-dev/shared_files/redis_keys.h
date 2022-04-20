@@ -36,4 +36,6 @@ std::string _game_setup = "game:setup";
 std::string _status_update_sent = "game:update:sent";
 std::string _status_update_ready = "game:update:ready";
 
+std::string _game_program_running = "game:program:running";
+
 #endif
