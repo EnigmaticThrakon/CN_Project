@@ -22,16 +22,6 @@ bool test_player_connection(bool right)
     return (redisHandler->get_key(_left_player_connected) == "1");
 }
 
-// Function create the string that will be sent to the client
-std::string get_response_string(std::string formattedString)
-{
-    // Repeats the formatted strin five times, then returns it
-    for (int i = 0; i < 5; i++)
-        formattedString = formattedString + formattedString;
-
-    return formattedString;
-}
-
 // Function to block and wait for both players to connect
 void await_players()
 {

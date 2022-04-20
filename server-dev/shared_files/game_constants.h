@@ -30,9 +30,19 @@ int _initial_ball_y = _screen_height / 2;
 //      sent to the clients from the server
 std::string responseFormat = "<%s,%s:%s,%s:%s,%s>";
 
+// Function create the string that will be sent to the client
+std::string get_response_string(std::string formattedString)
+{
+    // Repeats the formatted strin five times, then returns it
+    for(int i = 0; i < 5; i++)
+        formattedString = formattedString + formattedString;
+    
+    return formattedString;
+}
+
 //Standardized console output for when users connect or disconnect
-std::string newConnectionFormat = "New User Connected\n%s Player\nSocket FD is %d\nIP : %s:%d\n";
-std::string disconnectionFormat = "User Disconnected\n%s Player\nSocket FD is %d\nIP : %s:%d\n";
+std::string new_connection = "New User Connected\n%s Player\nSocket FD is %d\nIP : %s:%d\n";
+std::string closed_connection = "User Disconnected\n%s Player\nSocket FD is %d\nIP : %s:%d\n";
 
 //Variable that determines the score before the game completes
 int _win = 5;
