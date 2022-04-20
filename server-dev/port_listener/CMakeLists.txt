@@ -6,6 +6,6 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 find_package(hiredis REQUIRED)
 find_package(Threads REQUIRED)
 
-add_executable(port_listener socket-listener-temp.cpp)
+add_executable(port_listener socket-listener.cpp)
 target_link_libraries(port_listener PRIVATE ${HIREDIS_LIBRARY})
 target_link_libraries(port_listener PRIVATE Threads::Threads)
