@@ -1,3 +1,11 @@
+import os, sys
+
+# Static directory structure and filenames
+RESOURCES_DIRECTORY = "/client_dev/dependencies/objects/resources/"
+SLKSCREB_FILENAME = "slkscreb.ttf"
+PONG_FONT_FILENAME = "pong_font.ttf"
+SCORE_SOUND_FILENAME = "score.mp3"
+INTRO_SOUND_FILENAME = "intro.mp3"
 # Game variables
 SCREEN_WIDTH = 1000
 SCREEN_HEIGHT = 800
@@ -7,8 +15,11 @@ WHITE = (255, 255, 255)
 LIGHT_GREY = (218, 218, 218)
 BLACK = (0, 0, 0)
 # Fonts
-SLKSCREB = 'slkscreb.ttf'
-PONG = 'pong_font.ttf'
+SLKSCREB = os.getcwd() + RESOURCES_DIRECTORY + SLKSCREB_FILENAME
+PONG = os.getcwd() + RESOURCES_DIRECTORY + PONG_FONT_FILENAME
+# Sounds
+SCORE_SOUND = os.getcwd() + RESOURCES_DIRECTORY + SCORE_SOUND_FILENAME
+INTRO_SOUND = os.getcwd() + RESOURCES_DIRECTORY + INTRO_SOUND_FILENAME
 # Ball variables
 BALL_SIZE = 20
 BALL_STARTING_POS = (SCREEN_WIDTH / 2 - BALL_SIZE / 2, SCREEN_HEIGHT / 2 - BALL_SIZE / 2)

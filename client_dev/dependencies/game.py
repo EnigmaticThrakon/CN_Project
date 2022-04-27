@@ -1,11 +1,11 @@
 import pygame
-from client_dev.objects.ball import Ball
-from client_dev.objects.paddle import Paddle
-from client_dev.objects.score import Score
-from client_dev.client import Client
-from client_dev.objects.text import Text
-from client_dev.objects.button import Button
-from client_dev.variables import *
+from dependencies.objects.ball import Ball
+from dependencies.objects.paddle import Paddle
+from dependencies.objects.score import Score
+from dependencies.client import Client
+from dependencies.objects.text import Text
+from dependencies.objects.button import Button
+from dependencies.variables import *
 import time
 
 
@@ -144,7 +144,7 @@ class Game():
 
     def start(self):
         # Initialize start button, title, and background music
-        pygame.mixer.music.load("intro.mp3")
+        pygame.mixer.music.load(INTRO_SOUND)
         pygame.mixer.music.set_volume(1)
         pygame.mixer.music.play(-1)
         title_text = Text(75, WHITE, "''PING'' PONG", 100, 100)

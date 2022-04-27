@@ -1,5 +1,5 @@
 import pygame
-from client_dev.variables import *
+from ..variables import *
 
 
 class Ball():

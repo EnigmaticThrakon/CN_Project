@@ -1,4 +1,4 @@
-from client_dev.game import Game
+from dependencies.game import Game
 
 
 # Main function

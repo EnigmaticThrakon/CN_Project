@@ -1,5 +1,5 @@
 import pygame
-from client_dev.variables import *
+from ..variables import *
 
 
 class Score:
@@ -10,7 +10,7 @@ class Score:
         self.font = pygame.font.Font(PONG, self.size)
         self.y = SCORE_STARTING_Y
         self.x = None
-        self.score_sound = pygame.mixer.Sound("score.mp3")
+        self.score_sound = pygame.mixer.Sound(SCORE_SOUND)
 
     # Draws score on screen
     def draw(self, window):
