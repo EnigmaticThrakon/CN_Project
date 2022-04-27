@@ -11,7 +11,7 @@ class Client():
         self.server = 'marvin.webredirect.org'
         self.address = (self.server, self.port)
         # Initialize client and connect
-        self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.client.connect(self.address)
         self.connected = True
         # Receive player screen side. Format = <000,000:000,000:000:000> (left) or <111,111:111,111:111:111> (right)
