@@ -129,7 +129,7 @@ void status_update()
 bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address)
 {
     // Set the master socket variable and exit with error if it equals 0
-    if ((master_socket = socket(AF_INET, SOCK_STREAM, 0)) == 0)
+    if ((master_socket = socket(AF_INET, SOCK_DGRAM, 0)) == 0)
     {
         perror("socket failed");
         exit(EXIT_FAILURE);
