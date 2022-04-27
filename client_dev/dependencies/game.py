@@ -76,19 +76,19 @@ class Game():
         # Initialize client and set player x positions
         self.client = Client()
         if self.parse_response(self.client.player_screen_side)[0] == 111:
-            self.player_right = True
+            self.player_location = 1
             self.player.x = PADDLE_STARTING_RIGHT_X
             self.opponent.x = PADDLE_STARTING_LEFT_X
             self.player_score.x = SCORE_STARTING_RIGHT_X
             self.opponent_score.x = SCORE_STARTING_LEFT_X
         else:
-            self.player_right = False
+            self.player_location = 0
             self.player.x = PADDLE_STARTING_LEFT_X
             self.opponent.x = PADDLE_STARTING_RIGHT_X
             self.player_score.x = SCORE_STARTING_LEFT_X
             self.opponent_score.x = SCORE_STARTING_RIGHT_X
         # Respond to player once initial positions are set
-        self.client.send_msg("debug")
+        self.client.send_msg(str(self.player_location) + ":debug")
 
     def loop(self):
         while True:
@@ -99,7 +99,7 @@ class Game():
             self.window.fill(BLACK)
             self.draw([self.player, self.opponent, self.player_score, self.opponent_score, self.ball])
             self.playerMovementHandler(pygame.key.get_pressed())
-            self.client.send_msg("{:03d}".format(int(self.player.y)))
+            self.client.send_msg(str(self.player_location) + ":{:03d}".format(int(self.player.y)))
             self.set_info(self.parse_response(self.client.recv_msg()))
             # Check for winner
             if self.player_score.score == 5 or self.opponent_score.score == 5:
@@ -133,7 +133,7 @@ class Game():
         # Set ball position
         self.ball.set_loc(server_response[2], server_response[3])
         # Set opponent paddle position and scores
-        if self.player_right:
+        if self.player_location == 1:
             self.opponent.set_loc(server_response[0])
             self.player_score.set_score(server_response[5])
             self.opponent_score.set_score(server_response[4])
@@ -207,5 +207,5 @@ class Game():
         self.fade_out([waiting_text])
         self.client.set_blocking(1)
         # Send connection acknowledgement
-        self.client.send_msg("999")
+        self.client.send_msg(str(self.player_location) + ":999")
         return False
