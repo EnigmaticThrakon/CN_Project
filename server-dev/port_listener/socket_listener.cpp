@@ -29,6 +29,7 @@
 
 redis_handler *redisHandler = new redis_handler();
 int left_player = -1, right_player = -1;
+struct sockaddr_in cliaddr, players[2];
 
 // Function to wait until the game is setup
 void await_game_setup()
@@ -41,7 +42,7 @@ void await_game_setup()
 }
 
 // Function to continually send out the game starting notification
-void notify_game_starting()
+void notify_game_starting(int master_socket)
 {
     std::string data = "";
 
@@ -51,31 +52,31 @@ void notify_game_starting()
         // Get the right player status and send it to the right player client if they're connected
         data = get_response_string(redisHandler->get_key(_right_player_update));
         if (redisHandler->get_key(_right_player_connected) == "1")
-            send(right_player, data.c_str(), strlen(data.c_str()), 0);
+            sendto(master_socket, data.c_str(), 1024, 0, (struct sockaddr*)&players[1], sizeof(players[1]));
 
         // Get the left player status and send it to the left player client if they're connected
         data = get_response_string(redisHandler->get_key(_left_player_update));
         if (redisHandler->get_key(_left_player_connected) == "1")
-            send(left_player, data.c_str(), strlen(data.c_str()), 0);
+            sendto(master_socket, data.c_str(), 1024, 0, (struct sockaddr*)&players[0], sizeof(players[0]));
     }
 
     return;
 }
 
 // Function to send the status to the clients and return if they're both connected
-bool send_status()
+bool send_status(int master_socket)
 {
     std::string data = "";
 
     // Get the right player status and send it to the right player client if they're connected
     data = get_response_string(redisHandler->get_key(_right_player_update));
     if (redisHandler->get_key(_right_player_connected) == "1")
-        send(right_player, data.c_str(), strlen(data.c_str()), 0);
+        sendto(master_socket, data.c_str(), 1024, 0, (struct sockaddr*)&players[1], sizeof(players[1]));
 
     // Get the left player status and send it to the left player client if they're connected
     data = get_response_string(redisHandler->get_key(_left_player_update));
     if (redisHandler->get_key(_left_player_connected) == "1")
-        send(left_player, data.c_str(), strlen(data.c_str()), 0);
+        sendto(master_socket, data.c_str(), 1024, 0, (struct sockaddr*)&players[0], sizeof(players[0]));
 
     // Set the update sent flag
     redisHandler->set_key(_status_update_sent, "1");
@@ -86,10 +87,10 @@ bool send_status()
 
 // Function to constantly send the status update when both players are connected and
 //       the game has started
-void status_update()
+void status_update(int master_socket)
 {
     // Send a command to the system to start the pong controller asynchronously
-    system("./pong_controller &");
+    //system("./pong_controller &");
 
     // Declare and initialize a new timer
     update_timer *timer = new update_timer();
@@ -98,7 +99,7 @@ void status_update()
 
     // Wait for both players are connected and the game has started
     await_game_setup();
-    notify_game_starting();
+    notify_game_starting(master_socket);
 
     // Reset the timer
     timer->reset();
@@ -107,10 +108,10 @@ void status_update()
     while (connected)
     {
         // Send a status update after 880 microseconds
-        if (timer->elapsed_time() > 8.8e5)
+        if (timer->elapsed_time() > 8.8e6)
         {
             // Send the status update and update the indicator if either player has disconnected
-            if (send_status())
+            if (send_status(master_socket))
                 connected = false;
 
             // Reset the timer
@@ -137,9 +138,11 @@ bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address
     }
 
     // Set the socket options for the master socket and return with error if it returns with a negative
-    int opt = 1;
-    if (setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt,
-                   sizeof(opt)) < 0)
+    // int opt = 1;
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 0;
+    read_timeout.tv_usec = 10;
+    if (setsockopt(master_socket, SOL_SOCKET, SO_RCVTIMEO, &read_timeout, sizeof(read_timeout)) < 0)
     {
         perror("setsockopt");
         exit(EXIT_FAILURE);
@@ -148,7 +151,7 @@ bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address
 
     // Set the structure variables for the address struct
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(PORT);
 
     // Bind the master socket to the address and return with error if the function returns with a negative
@@ -161,12 +164,12 @@ bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address
     printf("Listener on port %d \n", PORT);
 
     // Start listening on the socket and return with error if the function returns with a negative
-    if (listen(master_socket, 3) < 0)
-    {
-        perror("listen");
-        exit(EXIT_FAILURE);
-        return false;
-    }
+    // if (listen(master_socket, 3) < 0)
+    // {
+    //     perror("listen");
+    //     exit(EXIT_FAILURE);
+    //     return false;
+    // }
 
     // Reset the Redis database
     redisHandler->reset_database();
@@ -204,7 +207,7 @@ int main(int argc, char *argv[])
     tempTimer->reset();
 
     // Detach a thread so the status update is concurrently running along side the listening portion of the server
-    std::thread(status_update).detach();
+    std::thread(status_update, master_socket).detach();
 
     // Wait for 5 milliseconds
     while (tempTimer->elapsed_time() < 5e6)
@@ -213,155 +216,99 @@ int main(int argc, char *argv[])
 
     std::string input_data = "";
     int new_socket = -1;
-
-    // Loop while the pong controller is running
-    while (redisHandler->get_key(_game_program_running) == "1")
+    int len = sizeof(cliaddr);
+    int delimiter_location = 0;
+    bool left_contacted = false, right_contacted = false;
+    while(!left_contacted || !right_contacted)
     {
-        // Clear readfds
-        FD_ZERO(&readfds);
+        while(delimiter_location = recvfrom(master_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&cliaddr, (socklen_t *)&len) < 0) { }
+        input_data = std::string(buffer);
 
-        // Set the master socket value and set the max_sd to the master socket
-        FD_SET(master_socket, &readfds);
-        max_sd = master_socket;
+        if(input_data.length() == 0)
+            continue;
 
-        // If the right player is set, reset the right player and update max_sd if
-        //       right player's socket identifier is greater
-        if (right_player > -1)
+        if((input_data.length() >= 7 && input_data.substr(0, 7) == "connect") || (input_data.length() > 4 && input_data.substr(2, 3) == "deb"))
         {
-            FD_SET(right_player, &readfds);
-
-            if (right_player > max_sd)
-                max_sd = right_player;
-        }
-
-        // If the left player is set, reset the left player and update max_sd if
-        //       left player's socket identifier is greater
-        if (left_player > -1)
+        if(!right_contacted || input_data.substr(0, 1) == "1")
         {
-            FD_SET(left_player, &readfds);
-
-            if (left_player > max_sd)
-                max_sd = left_player;
-        }
-
-        // Wait for something to happen on any of the sockets and print error if the response is a negative
-        activity = select(max_sd + 1, &readfds, NULL, NULL, NULL);
-        if ((activity < 0) && (errno != EINTR))
-        {
-            printf("select error");
-        }
-
-        // If something happened on the master socket add new connection
-        if (FD_ISSET(master_socket, &readfds))
-        {
-            // Set new_socket to the identifier returned from the accept function
-            new_socket = accept(master_socket, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-
-            // Return with error if new_socket was negative
-            if (new_socket < 0)
+            if (redisHandler->get_key(_right_player_connected) != "1")
             {
-                perror("accept");
-                exit(EXIT_FAILURE);
-            }
-
-            // If right player isn't set yet, set the right player to the incoming connection
-            if (right_player < 0)
-            {
-                // Set the right player to the identifier
-                right_player = new_socket;
-
-                // Send a response of all 1's to let the client know they are the right player
-                snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "111", "111", "111", "111", "111", "111");
-                input_data = get_response_string(std::string(buffer));
-                send(right_player, input_data.c_str(), strlen(input_data.c_str()), 0);
-
-                // Print log saying the right player connected
-                printf(new_connection.c_str(), "Right", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-            }
-            else if (left_player < 0) // Otherwise set the left player to the incoming connection if it's not set
-            {
-                // Same thing occurs for the left as is stated for the right above
-                left_player = new_socket;
-
-                snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
-                input_data = get_response_string(std::string(buffer));
-                send(left_player, input_data.c_str(), strlen(input_data.c_str()), 0);
-
-                printf(new_connection.c_str(), "Left", new_socket, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-            }
-
-            // Reset new socket variable
-            new_socket = -1;
-        }
-
-        // Check to see if there are updated on the right player socket
-        if (FD_ISSET(right_player, &readfds))
-        {
-            // Update the buffer to hold the response from the right player, then pull out the first three characters
-            buffer[read(right_player, buffer, 1025)] = '\0';
-            input_data = std::string(buffer).substr(0, 3);
-
-            // If the response is three ~'s, disconnect the right player
-            if (input_data == "~~~")
-            {
-                // Update the Redis flags appropriately
-                redisHandler->set_key(_right_player_connected, "0");
-                redisHandler->set_key(_right_started_received, "0");
-
-                // Get the peer name and print to the console that the right player has disconnected
-                getpeername(right_player, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-                printf(closed_connection.c_str(), "Right", right_player, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-
-                // Close the right player connection and reset the right player variable
-                close(right_player);
-                right_player = -1;
-
-                // Exit the program
-                return 0;
-            }
-            else
-            {
-                // Otherwise, set the connected flag if it isn't already and determine if the reply 999 was received
-                if (redisHandler->get_key(_right_player_connected) != "1")
+                if(input_data.substr(2, 3) == "deb")
+                {
                     redisHandler->set_key(_right_player_connected, "1");
-
-                else if (input_data == "999")
-                    redisHandler->set_key(_right_started_received, "1"); // If so, update the player received game starting flag so the game can start
-
-                // Finally, set the player response Redis key to what the income data was
-                redisHandler->set_key(_right_player_response, input_data);
+                }
+                else
+                {
+                    right_contacted = true;
+                    players[1] = cliaddr;
+                    snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "111", "111", "111", "111", "111", "111");
+                    input_data = get_response_string(std::string(buffer));
+                    sendto(master_socket, input_data.c_str(), 1024, 0, (struct sockaddr*)&players[1], sizeof(players[1]));
+                }
             }
         }
-
-        if (FD_ISSET(left_player, &readfds)) // Check to see if there are any updates on the left player and perform the same tasks as above
+        else if(!left_contacted || input_data.substr(0, 1) == "0")
         {
-            buffer[read(left_player, buffer, 1025)] = '\0';
-            input_data = std::string(buffer).substr(0, 3);
-
-            if (input_data == "~~~")
+            if (redisHandler->get_key(_left_player_connected) != "1")
             {
-                redisHandler->set_key(_left_player_connected, "0");
-                redisHandler->set_key(_left_started_received, "0");
-
-                getpeername(left_player, (struct sockaddr *)&address, (socklen_t *)&addrlen);
-                printf(closed_connection.c_str(), "Left", left_player, inet_ntoa(address.sin_addr), ntohs(address.sin_port));
-
-                close(left_player);
-                left_player = -1;
-
-                return 0;
-            }
-            else
-            {
-                if (redisHandler->get_key(_left_player_connected) != "1")
+                if(input_data.substr(2, 3) == "deb")
+                {
                     redisHandler->set_key(_left_player_connected, "1");
-                else if (input_data == "999")
-                    redisHandler->set_key(_left_started_received, "1");
-
-                redisHandler->set_key(_left_player_response, input_data);
+                }
+                else
+                {
+                    left_contacted = true;
+                    players[0] = cliaddr;
+                    snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "000", "000", "000", "000", "000", "000");
+                    input_data = get_response_string(std::string(buffer));
+                    sendto(master_socket, input_data.c_str(), 1024, 0, (struct sockaddr *)&players[0], sizeof(players[0]));
+                }
             }
+        }
         }
     }
 
+    while(1)
+    {
+        delimiter_location = recvfrom(master_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&cliaddr, (socklen_t *)&len);
+        buffer[delimiter_location] = '\0';
+
+        input_data = std::string(buffer);
+
+        if(input_data.substr(0, 1) == "0")
+        {
+            if (redisHandler->get_key(_left_player_connected) != "1")
+            {
+                redisHandler->set_key(_left_player_connected, "1");
+            }
+
+            else if(input_data.substr(2, 3) == "999")
+            {
+                redisHandler->set_key(_left_started_received, "1");
+            }
+
+            else
+            {
+                redisHandler->set_key(_left_player_response, input_data.substr(2, 3));
+            }
+        }
+        else if(input_data.substr(0, 1) == "1")
+        {
+            if (redisHandler->get_key(_right_player_connected) != "1")
+            {
+                redisHandler->set_key(_right_player_connected, "1");
+            }
+
+            else if(input_data.substr(2, 3) == "999")
+            {
+                redisHandler->set_key(_right_started_received, "1");
+            }
+
+            else
+            {
+                redisHandler->set_key(_right_player_response, input_data.substr(2, 3));
+            }
+        }
+    }
     return 0;
 }
