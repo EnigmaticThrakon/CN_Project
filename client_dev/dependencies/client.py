@@ -24,13 +24,7 @@ class Client():
     def recv_msg(self):
         try:
             # Receives a message (string format) from the server and decodes it
-            valid_response_received = False
-            while(not valid_response_received):
-                try:
-                    response = str(self.client.recv(2048))#.decode(self.format))
-                    valid_response_received = True
-                except:
-                    valid_response_received = False
+            response = str(self.client.recv(2048))#.decode(self.format))
             # Format = <player_x,score_x:ball_x,ball_y:player_score,opponent_score> (all three digit integers)
             valid_response = re.search(r'<\d{3},\d{3}:\d{3},\d{3}:\d{3},\d{3}>', response)
             if valid_response:
