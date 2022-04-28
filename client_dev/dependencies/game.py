@@ -44,9 +44,9 @@ class Game():
     def end(self):
         # Decided who the winner is and initialize text and button objects
         if self.winner:
-            winner_text = Text(75, WHITE, "WINNER", 300, 100)
+            winner_text = Text(75, WHITE, "WINNER", 325, 100)
         else:
-            winner_text = Text(75, WHITE, "LOSER", 300, 100)
+            winner_text = Text(75, WHITE, "LOSER", 325, 100)
         seconds_left = 10
         seconds_left_text = Text(75, WHITE, f"{seconds_left}", 450, 500)
         start = time.perf_counter()
@@ -106,6 +106,8 @@ class Game():
                 self.draw([self.player, self.opponent, self.player_score, self.opponent_score, self.ball])
                 if self.player_score.score == 5:
                     self.winner = True
+                    self.player.y = PADDLE_STARTING_Y
+                    self.opponent.y = PADDLE_STARTING_Y
                 return
 
     def parse_response(self, server_response=None):
