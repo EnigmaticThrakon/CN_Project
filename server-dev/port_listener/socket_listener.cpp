@@ -90,7 +90,7 @@ bool send_status(int master_socket)
 void status_update(int master_socket)
 {
     // Send a command to the system to start the pong controller asynchronously
-    //system("./pong_controller &");
+    system("./pong_controller &");
 
     // Declare and initialize a new timer
     update_timer *timer = new update_timer();
@@ -162,14 +162,6 @@ bool initialize(int &master_socket, fd_set &readfds, struct sockaddr_in &address
         return false;
     }
     printf("Listener on port %d \n", PORT);
-
-    // Start listening on the socket and return with error if the function returns with a negative
-    // if (listen(master_socket, 3) < 0)
-    // {
-    //     perror("listen");
-    //     exit(EXIT_FAILURE);
-    //     return false;
-    // }
 
     // Reset the Redis database
     redisHandler->reset_database();
