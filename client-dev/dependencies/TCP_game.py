@@ -2,7 +2,7 @@ import pygame
 from dependencies.objects.ball import Ball
 from dependencies.objects.paddle import Paddle
 from dependencies.objects.score import Score
-from dependencies.client import Client
+from dependencies.TCP_client import Client
 from dependencies.objects.text import Text
 from dependencies.objects.button import Button
 from dependencies.variables import *

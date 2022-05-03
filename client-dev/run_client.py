@@ -1,4 +1,4 @@
-from dependencies.game import Game
+from dependencies.TCP_game import Game  #This can take the UDP_game to run with the UDP protocol
 
 
 # Main function
