@@ -1,7 +1,7 @@
 import os, sys
 
 # Static directory structure and filenames
-RESOURCES_DIRECTORY = "/client_dev/dependencies/objects/resources/"
+RESOURCES_DIRECTORY = "/client-dev/dependencies/objects/resources/"
 SLKSCREB_FILENAME = "slkscreb.ttf"
 PONG_FONT_FILENAME = "pong_font.ttf"
 SCORE_SOUND_FILENAME = "score.mp3"

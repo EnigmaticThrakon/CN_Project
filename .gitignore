@@ -12,6 +12,6 @@ port_listener_current
 <<<<<<< HEAD
 **/__pycache__
 =======
-client_dev/_pycache_
+client-dev/_pycache_
 >>>>>>> origin/dev
 >>>>>>> ee383dae0e3196be7d737592938ead0c36e36281
