@@ -1,5 +1,3 @@
-// Shitload of header files, I don't know what most of these are for
-//       they were just required by the program I pulled from online
 #include <stdio.h>
 #include <stdexcept>
 #include <string.h>

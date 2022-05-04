@@ -1,5 +1,3 @@
-// Shitload of header files, I don't know what most of these are for
-//       they were just required by the program I pulled from online
 #include <stdio.h>
 #include <stdexcept>
 #include <string.h>
@@ -211,26 +209,34 @@ int main(int argc, char *argv[])
     int len = sizeof(cliaddr);
     int delimiter_location = 0;
     bool left_contacted = false, right_contacted = false;
+
+    //Loop until both players have made contact and the response has been sent
     while(!left_contacted || !right_contacted)
     {
+        //Wait until there is viable data received
         while(delimiter_location = recvfrom(master_socket, buffer, sizeof(buffer), 0, (struct sockaddr*)&cliaddr, (socklen_t *)&len) < 0) { }
         input_data = std::string(buffer);
 
+        //If the data length is zero, continue
         if(input_data.length() == 0)
             continue;
 
+        //If the data is long enough then pass into the parsing portion
         if((input_data.length() >= 7 && input_data.substr(0, 7) == "connect") || (input_data.length() > 4 && input_data.substr(2, 3) == "deb"))
         {
+            //Check if the right play is connected, if not, set as connected and respond with the player side
         if(!right_contacted || input_data.substr(0, 1) == "1")
         {
             if (redisHandler->get_key(_right_player_connected) != "1")
             {
                 if(input_data.substr(2, 3) == "deb")
                 {
+                    //If "deb" is received then set the right player connected flag to 1
                     redisHandler->set_key(_right_player_connected, "1");
                 }
                 else
                 {
+                    //Otherwise add the player data to the client array and respond with the player side
                     right_contacted = true;
                     players[1] = cliaddr;
                     snprintf(buffer, sizeof(buffer), responseFormat.c_str(), "111", "111", "111", "111", "111", "111");
@@ -239,8 +245,8 @@ int main(int argc, char *argv[])
                 }
             }
         }
-        else if(!left_contacted || input_data.substr(0, 1) == "0")
-        {
+        else if(!left_contacted || input_data.substr(0, 1) == "0")  //Otherwise check if left is connected and do the same
+        {                                                           //      as above if it isn't
             if (redisHandler->get_key(_left_player_connected) != "1")
             {
                 if(input_data.substr(2, 3) == "deb")
@@ -260,32 +266,35 @@ int main(int argc, char *argv[])
         }
     }
 
+    //Enter never ending loop
     while(1)
     {
+        //Receive the data
         delimiter_location = recvfrom(master_socket, buffer, sizeof(buffer), 0, (struct sockaddr *)&cliaddr, (socklen_t *)&len);
         buffer[delimiter_location] = '\0';
-
         input_data = std::string(buffer);
 
+        //If the data starts with 0 then it's the left player
         if(input_data.substr(0, 1) == "0")
         {
+            //Set the player flag to connected if it isn't set already
             if (redisHandler->get_key(_left_player_connected) != "1")
             {
                 redisHandler->set_key(_left_player_connected, "1");
             }
-
+            //Determine if the data is a control string
             else if(input_data.substr(2, 3) == "999")
             {
                 redisHandler->set_key(_left_started_received, "1");
             }
-
+            //Otherwise just send the data into Redis
             else
             {
                 redisHandler->set_key(_left_player_response, input_data.substr(2, 3));
             }
         }
-        else if(input_data.substr(0, 1) == "1")
-        {
+        else if(input_data.substr(0, 1) == "1")     //If the data starts with 1, then it's the right player
+        {                                           //      and everything above needs to be done for the right player
             if (redisHandler->get_key(_right_player_connected) != "1")
             {
                 redisHandler->set_key(_right_player_connected, "1");
@@ -302,5 +311,6 @@ int main(int argc, char *argv[])
             }
         }
     }
+    
     return 0;
 }
